@@ -1,0 +1,2 @@
+{"request_id":"REQ-72C5","patient_id":"PATIENT-C7D1A7","user_input_symptoms":"my back hurts so much","predicted_disease":"Osteoarthristis"}
+{"request_id":"REQ-238","patient_id":"PATIENT-8080","user_input_symptoms":" continuous_sneezing,  chills,  fatigue,  cough,  high_fever,  swelled_lymph_nodes,  malaise,  phlegm,  throat_irritation,  redness_of_eyes,  sinus_pressure,  runny_nose,  congestion,  chest_pain,  loss_of_smell,  muscle_pain","predicted_disease":"Common Cold"}
