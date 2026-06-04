@@ -4,6 +4,9 @@ import json
 import pickle
 import redis
 import pandas as pd
+import re
+import numpy as np  
+from sklearn.metrics.pairwise import cosine_similarity 
 
 os.environ['JAVA_HOME'] = '/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home'
 os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 pyspark-shell'
@@ -25,6 +28,7 @@ MODEL_DIR = "models/"
 with open(os.path.join(MODEL_DIR, 'sbert_model.pkl'), 'rb') as f: sbert_model = pickle.load(f)
 with open(os.path.join(MODEL_DIR, 'label_encoder.pkl'), 'rb') as f: le = pickle.load(f)
 with open(os.path.join(MODEL_DIR, 'rf_model.pkl'), 'rb') as f: rf_model = pickle.load(f)
+with open(os.path.join(MODEL_DIR, 'train_embeddings.pkl'), 'rb') as f: train_data = pickle.load(f)
 print("✅ Successfully loaded AI model!")
 
 df_kafka = spark.readStream \
@@ -49,41 +53,59 @@ def foreach_batch_sink(df_batch, batch_id):
         return
     
     pdf = df_batch.toPandas()
-    
     r = redis.Redis(host='localhost', port=6379, db=0)
     
     for idx, row in pdf.iterrows():
         p_id = row['patient_id']
         symptoms_text = row['user_input_symptoms']
+        confidence_score = 0 
         
         if not symptoms_text or str(symptoms_text).strip() in ["", "none", "unknown"]:
             predicted_disease = "Unknown Condition"
+            confidence_score = 0
         else:
             try:
+                # Đồng bộ hoàn chỉnh xử lý chuỗi văn bản lâm sàng
                 clean_text = str(symptoms_text).lower().strip()
-                test_vector = sbert_model.encode([clean_text])[0]
-                pred_code = rf_model.predict([test_vector])[0]
-                predicted_disease = str(le.inverse_transform([pred_code])[0]).title()
+                clean_text = clean_text.replace('_', ' ')
+                
+                vector = sbert_model.encode([clean_text])
+                
+                X_train = train_data['X_train']
+                y_train = train_data['y_train']
+                
+                raw_similarities = cosine_similarity(vector, X_train)[0]
+                best_match_idx = np.argmax(raw_similarities)
+                best_raw_cosine = raw_similarities[best_match_idx]
+                
+                predicted_label_code = y_train[best_match_idx]
+                predicted_disease = str(le.inverse_transform([predicted_label_code])[0]).title()
+                
+                COSINE_MIN, COSINE_MAX = 0.25, 0.65
+                clipped_cosine = max(COSINE_MIN, min(COSINE_MAX, best_raw_cosine))
+                confidence_score = int(((clipped_cosine - COSINE_MIN) / (COSINE_MAX - COSINE_MIN)) * 100)
+                
+                print(f"🎯 [Spark Serving Layer] Diagnosed: {predicted_disease} ({confidence_score}%)")
+                
             except Exception as e:
-                predicted_disease = f"Inference Error: {str(e)}"
+                predicted_disease = f"Inference Error"
+                confidence_score = 50
+                print(f"❌ [Spark Engine Error]: {str(e)}")
         
         result_payload = {
             "request_id": row['request_id'],
             "symptoms": symptoms_text,
-            "predicted_disease": predicted_disease
+            "predicted_disease": predicted_disease,
+            "confidence": confidence_score
         }
         
         r.set(f"telehealth:result:{p_id}", json.dumps(result_payload), ex=3600)
-        print(f" 🔥 [Spark Engine] Successfully diagnosed {p_id} -> Result: {predicted_disease}")
+        print(f" 🔥 [Spark Engine] Diagnosed {p_id} -> {predicted_disease} ({confidence_score}%)")
         
-
     log_dir = "data/cleaned/predictions_history"
     os.makedirs(log_dir, exist_ok=True)
-    pdf['predicted_disease'] = pdf['user_input_symptoms'].apply(
-        lambda x: str(le.inverse_transform([rf_model.predict([sbert_model.encode([str(x).lower().strip()])[0]])[0]])[0]).title()
-        if pd.notnull(x) and str(x).strip() not in ["", "none", "unknown"] else "Unknown Condition"
-    )
     pdf.to_json(os.path.join(log_dir, f"batch_{batch_id}.json"), orient='records', lines=True)
+
 
 query = df_parsed.writeStream \
     .foreachBatch(foreach_batch_sink) \

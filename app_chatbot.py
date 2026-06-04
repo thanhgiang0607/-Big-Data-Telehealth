@@ -23,475 +23,494 @@ st.set_page_config(
 #  Text: #1A2E2B  /  Muted: #6B8F88
 #  Accent warm: #FF6B6B (urgent/alert)
 # ─────────────────────────────────────────────
-st.markdown("""
+st.markdown(f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
-html, body, [class*="css"] {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-}
+/* ══════════════════════════════════════════
+   LIGHT theme (default)
+   ══════════════════════════════════════════ */
+:root {{
+  --bg-page:          #F0F6F5;
+  --bg-navbar:        #FFFFFF;
+  --bg-sidebar:       #FFFFFF;
+  --bg-card:          #FFFFFF;
+  --bg-card-alt:      #F7FFFE;
+  --bg-input:         #FFFFFF;
+  --bg-chip:          #FFFFFF;
+  --bg-info-header:   #F0FAF8;
+  --bg-bullet:        #E6FAF7;
+  --bg-confidence:    #EAF5F3;
+  --bg-thumb:         #F0FAF8;
+  --bg-hist:          #FFFFFF;
+  --bg-patient:       linear-gradient(135deg,#E6FAF7,#D0F5EF);
+  --bg-metric:        #F0FAF8;
+  --bg-disclaimer:    #F7F8FA;
+  --bg-bubble-ai:     #FFFFFF;
+  --bg-cta:           linear-gradient(135deg,#FFF8F0,#FFF3E8);
 
-.stApp {
-    background-color: #F0F6F5;
-    color: #1A2E2B;
-}
+  --bd-main:          #E0EDEB;
+  --bd-card:          #E5F0EE;
+  --bd-input:         #C8E8E3;
+  --bd-chip:          #C8E8E3;
+  --bd-hist:          #E0EDEB;
+  --bd-cta:           #FFD8B8;
+  --bd-metric:        #C8E8E3;
+  --bd-patient:       #B8EDE6;
+  --bd-status:        #EAF3F1;
+  --bd-prec:          #EAF5F2;
+  --bd-feedback:      #EAF3F1;
+  --bd-bubble-ai:     #EAF3F1;
+  --bd-sidebar:       #E0EDEB;
 
-#MainMenu, footer, header { visibility: hidden; }
-.block-container { padding: 0 1.5rem 6rem !important; max-width: 760px; }
+  --tx-primary:       #1A2E2B;
+  --tx-secondary:     #6B8F88;
+  --tx-muted:         #A0BCB8;
+  --tx-prec:          #3D6560;
+  --tx-info-key:      #6B8F88;
+  --tx-info-val:      #1A2E2B;
+  --tx-hist-sym:      #A0BCB8;
+  --tx-hist-time:     #C8DEDD;
+  --tx-disclaimer:    #A8BAB7;
+  --tx-cta-h:         #C25A00;
+  --tx-cta-p:         #9A5020;
 
-/* ── Top Nav Bar ── */
-.da-navbar {
-    background: #FFFFFF;
-    border-bottom: 1px solid #E0EDEB;
-    padding: 0 0 0;
-    margin: -1rem -1.5rem 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 28px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 1px 8px rgba(0,194,168,0.07);
-}
-.da-logo-wrap { display:flex; align-items:center; gap:10px; }
-.da-logo-icon {
-    width: 36px; height: 36px;
-    background: linear-gradient(135deg, #00C2A8 0%, #00A891 100%);
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
-    color: white;
-}
-.da-logo-text {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: #1A2E2B;
-    letter-spacing: -0.02em;
-}
-.da-logo-text span { color: #00C2A8; }
-.da-nav-badge {
-    background: #E6FAF7;
-    color: #00A891;
-    border-radius: 20px;
-    padding: 4px 12px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    border: 1px solid #B8EDE6;
-}
+  --sh-card:    0 4px 20px rgba(0,0,0,0.07);
+  --sh-bubble:  0 1px 6px rgba(0,0,0,0.06);
+  --sh-navbar:  0 1px 8px rgba(0,194,168,0.07);
+  --sh-input:   0 2px 8px rgba(0,194,168,0.08);
 
-/* ── Hero Strip ── */
-.da-hero {
-    background: linear-gradient(135deg, #00C2A8 0%, #00896E 100%);
-    border-radius: 20px;
-    padding: 28px 28px 24px;
-    margin: 20px 0 22px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    position: relative;
-    overflow: hidden;
-}
-.da-hero::before {
-    content: '';
-    position: absolute;
-    top: -30px; right: -30px;
-    width: 140px; height: 140px;
-    background: rgba(255,255,255,0.08);
-    border-radius: 50%;
-}
-.da-hero::after {
-    content: '';
-    position: absolute;
-    bottom: -40px; right: 60px;
-    width: 100px; height: 100px;
-    background: rgba(255,255,255,0.05);
-    border-radius: 50%;
-}
-.da-hero-text h2 {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: #FFFFFF;
-    margin: 0 0 6px;
-    line-height: 1.25;
-}
-.da-hero-text p {
-    font-size: 0.85rem;
-    color: rgba(255,255,255,0.8);
-    margin: 0;
-    line-height: 1.5;
-}
-.da-hero-emoji {
-    font-size: 3rem;
-    flex-shrink: 0;
-    position: relative;
-    z-index: 1;
-}
+  --toggle-bg:    #E6FAF7;
+  --toggle-bd:    #B8EDE6;
+  --toggle-tx:    #00A891;
+  --toggle-icon:  "🌙";
+}}
 
-/* ── Service Pills (quick access) ── */
-.da-services { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
-.da-service-pill {
-    background: #FFFFFF;
-    border: 1.5px solid #E0EDEB;
-    border-radius: 30px;
-    padding: 8px 16px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: #1A2E2B;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    transition: all 0.15s;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-}
-.da-service-pill:hover { border-color:#00C2A8; color:#00A891; background:#F0FAF8; }
-.da-service-pill.active { background:#00C2A8; border-color:#00C2A8; color:white; }
+/* ══════════════════════════════════════════
+   DARK theme — applied to html.dark-mode
+   ══════════════════════════════════════════ */
+html.dark-mode, html.dark-mode body {{
+  --bg-page:          #0B1512;
+  --bg-navbar:        #0F1E1A;
+  --bg-sidebar:       #0D1A16;
+  --bg-card:          #122018;
+  --bg-card-alt:      #0D1A14;
+  --bg-input:         #0F1E1A;
+  --bg-chip:          #0F1E1A;
+  --bg-info-header:   #0D1E18;
+  --bg-bullet:        #0D2A20;
+  --bg-confidence:    #0D2018;
+  --bg-thumb:         #0D2018;
+  --bg-hist:          #0F1E1A;
+  --bg-patient:       linear-gradient(135deg,#0D2A20,#0A2018);
+  --bg-metric:        #0D2018;
+  --bg-disclaimer:    #0A1510;
+  --bg-bubble-ai:     #122018;
+  --bg-cta:           linear-gradient(135deg,#1E1008,#160C04);
+
+  --bd-main:          #1A3028;
+  --bd-card:          #1A3028;
+  --bd-input:         #1E4030;
+  --bd-chip:          #1E4030;
+  --bd-hist:          #1A3028;
+  --bd-cta:           #5A3010;
+  --bd-metric:        #1E4030;
+  --bd-patient:       #1E4A30;
+  --bd-status:        #142A20;
+  --bd-prec:          #142A1E;
+  --bd-feedback:      #142A20;
+  --bd-bubble-ai:     #1A3028;
+  --bd-sidebar:       #1A3028;
+
+  --tx-primary:       #D4EDE8;
+  --tx-secondary:     #6AABA0;
+  --tx-muted:         #3A6A5A;
+  --tx-prec:          #7ABFB0;
+  --tx-info-key:      #6AABA0;
+  --tx-info-val:      #D4EDE8;
+  --tx-hist-sym:      #3A6A5A;
+  --tx-hist-time:     #2A4A3A;
+  --tx-disclaimer:    #2A5040;
+  --tx-cta-h:         #FF9B52;
+  --tx-cta-p:         #C07040;
+
+  --sh-card:    0 4px 24px rgba(0,0,0,0.5);
+  --sh-bubble:  0 1px 8px rgba(0,0,0,0.3);
+  --sh-navbar:  0 1px 12px rgba(0,0,0,0.4);
+  --sh-input:   0 2px 8px rgba(0,0,0,0.25);
+
+  --toggle-bg:    #0D2A20;
+  --toggle-bd:    #1E4A30;
+  --toggle-tx:    #00C2A8;
+  --toggle-icon:  "☀️";
+}}
+
+html, body, [class*="css"] {{ font-family: 'Plus Jakarta Sans', sans-serif; }}
+.stApp {{
+  background-color: var(--bg-page) !important;
+  color: var(--tx-primary);
+  transition: background-color 0.35s ease, color 0.35s ease;
+}}
+#MainMenu, footer, header {{ visibility: hidden; }}
+.block-container {{ padding: 0 1.5rem 6rem !important; max-width: 760px; }}
+
+/* ── Navbar ── */
+.da-navbar {{
+  background: var(--bg-navbar); border-bottom: 1px solid var(--bd-main);
+  margin: -1rem -1.5rem 0; display:flex; align-items:center; justify-content:space-between;
+  padding: 14px 28px; position:sticky; top:0; z-index:100;
+  box-shadow: var(--sh-navbar); transition: background 0.35s, border-color 0.35s;
+}}
+.da-logo-wrap {{ display:flex; align-items:center; gap:10px; }}
+.da-logo-icon {{
+  width:36px; height:36px; background:linear-gradient(135deg,#00C2A8,#00A891);
+  border-radius:10px; display:flex; align-items:center; justify-content:center;
+  font-size:18px; color:white;
+}}
+.da-logo-text {{ font-size:1.05rem; font-weight:700; color:var(--tx-primary); letter-spacing:-0.02em; }}
+.da-logo-text span {{ color:#00C2A8; }}
+.da-nav-badge {{
+  background:var(--toggle-bg); color:var(--toggle-tx);
+  border-radius:20px; padding:4px 12px; font-size:0.72rem; font-weight:600;
+  border:1px solid var(--toggle-bd);
+}}
+
+/* ── Hero ── */
+.da-hero {{
+  background:linear-gradient(135deg,#00C2A8 0%,#00896E 100%);
+  border-radius:20px; padding:28px 28px 24px; margin:20px 0 22px;
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  position:relative; overflow:hidden;
+}}
+.da-hero::before {{
+  content:''; position:absolute; top:-30px; right:-30px;
+  width:140px; height:140px; background:rgba(255,255,255,0.08); border-radius:50%;
+}}
+.da-hero::after {{
+  content:''; position:absolute; bottom:-40px; right:60px;
+  width:100px; height:100px; background:rgba(255,255,255,0.05); border-radius:50%;
+}}
+.da-hero-text h2 {{ font-size:1.4rem; font-weight:700; color:#FFF; margin:0 0 6px; line-height:1.25; }}
+.da-hero-text p  {{ font-size:0.85rem; color:rgba(255,255,255,0.8); margin:0; line-height:1.5; }}
+.da-hero-emoji   {{ font-size:3rem; flex-shrink:0; position:relative; z-index:1; }}
 
 /* ── Chat bubbles ── */
-[data-testid="stChatMessage"] { background:transparent!important; }
-[data-testid="stChatMessage"]>div { background:transparent!important; }
+[data-testid="stChatMessage"] {{ background:transparent!important; }}
+[data-testid="stChatMessage"]>div {{ background:transparent!important; }}
 
-/* ── USER bubble ── */
-[data-testid="stChatMessage"][data-role="user"] .stMarkdown {
-    background: #00C2A8;
-    border-radius: 18px 18px 4px 18px;
-    padding: 12px 16px !important;
-    font-size: 0.92rem;
-    font-weight: 500;
-    box-shadow: 0 2px 8px rgba(0,194,168,0.25);
-}
+/* Streamlit 1.3x+ uses data-testid="stChatMessageContent" instead of data-role */
+/* USER bubble — teal background, white text */
+[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) .stMarkdown,
+[data-testid="stChatMessage"][data-role="user"] .stMarkdown {{
+  background:#00C2A8 !important;
+  border-radius:18px 18px 4px 18px !important;
+  padding:12px 16px!important;
+  font-size:0.92rem; font-weight:500;
+  box-shadow:0 2px 8px rgba(0,194,168,0.3);
+}}
+[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) .stMarkdown,
+[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) .stMarkdown *,
 [data-testid="stChatMessage"][data-role="user"] .stMarkdown,
-[data-testid="stChatMessage"][data-role="user"] .stMarkdown *,
-[data-testid="stChatMessage"][data-role="user"] .stMarkdown p,
-[data-testid="stChatMessage"][data-role="user"] .stMarkdown span,
-[data-testid="stChatMessage"][data-role="user"] .stMarkdown li,
-[data-testid="stChatMessage"][data-role="user"] .stMarkdown strong,
-[data-testid="stChatMessage"][data-role="user"] .stMarkdown em {
-    color: #FFFFFF !important;
-}
-/* ── ASSISTANT bubble ── */
-[data-testid="stChatMessage"][data-role="assistant"] .stMarkdown {
-    background: #FFFFFF;
-    border-radius: 18px 18px 18px 4px;
-    padding: 14px 18px !important;
-    font-size: 0.92rem;
-    box-shadow: 0 1px 6px rgba(0,0,0,0.06);
-    border: 1px solid #EAF3F1;
-}
+[data-testid="stChatMessage"][data-role="user"] .stMarkdown * {{ color:#FFFFFF!important; }}
+
+/* ASSISTANT bubble — card background, themed text */
+[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) .stMarkdown,
+[data-testid="stChatMessage"][data-role="assistant"] .stMarkdown {{
+  background:var(--bg-bubble-ai) !important;
+  border-radius:18px 18px 18px 4px !important;
+  padding:14px 18px!important; font-size:0.92rem;
+  box-shadow:var(--sh-bubble); border:1px solid var(--bd-bubble-ai);
+  transition:background 0.35s, border-color 0.35s;
+}}
+[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) .stMarkdown,
+[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) .stMarkdown *,
 [data-testid="stChatMessage"][data-role="assistant"] .stMarkdown,
-[data-testid="stChatMessage"][data-role="assistant"] .stMarkdown *,
-[data-testid="stChatMessage"][data-role="assistant"] .stMarkdown p,
-[data-testid="stChatMessage"][data-role="assistant"] .stMarkdown span,
-[data-testid="stChatMessage"][data-role="assistant"] .stMarkdown li,
-[data-testid="stChatMessage"][data-role="assistant"] .stMarkdown strong,
-[data-testid="stChatMessage"][data-role="assistant"] .stMarkdown em,
-[data-testid="stChatMessage"][data-role="assistant"] .stMarkdown blockquote,
-[data-testid="stChatMessage"][data-role="assistant"] .stMarkdown code {
-    color: #1A2E2B !important;
-}
+[data-testid="stChatMessage"][data-role="assistant"] .stMarkdown * {{ color:var(--tx-primary)!important; }}
 
-/* ── Result Card ── */
-.da-result-card {
-    background: #FFFFFF;
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.07);
-    border: 1px solid #E5F0EE;
-    margin-top: 8px;
-}
-.da-result-header {
-    background: linear-gradient(135deg, #00C2A8, #00A891);
-    padding: 18px 22px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-.da-result-header-icon {
-    width: 40px; height: 40px;
-    background: rgba(255,255,255,0.2);
-    border-radius: 12px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
-    flex-shrink: 0;
-}
-.da-result-header-text h4 {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: rgba(255,255,255,0.75);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin: 0 0 2px;
-}
-.da-result-req {
-    font-size: 0.65rem;
-    color: rgba(255,255,255,0.5);
-    font-family: monospace;
-}
-.da-result-body { padding: 22px 24px 18px; }
-.da-result-sub {
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: #A0BCB8;
-    margin-bottom: 6px;
-}
-.da-disease-name {
-    font-size: 1.6rem;
-    font-weight: 700;
-    color: #00A891;
-    line-height: 1.2;
-    margin: 0 0 16px;
-}
-.da-confidence-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 18px;
-}
-.da-confidence-bar {
-    flex: 1;
-    background: #EAF5F3;
-    border-radius: 6px;
-    height: 8px;
-    overflow: hidden;
-}
-.da-confidence-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #00C2A8, #00E5CC);
-    border-radius: 6px;
-    animation: conf-fill 1s ease-out forwards;
-}
-@keyframes conf-fill { from{width:0%} to{width:87%} }
-.da-confidence-pct {
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: #00A891;
-    min-width: 36px;
-}
+/* Nuclear fallback — every .stMarkdown inside a chat message gets dark text */
+[data-testid="stChatMessage"] .stMarkdown p,
+[data-testid="stChatMessage"] .stMarkdown span,
+[data-testid="stChatMessage"] .stMarkdown li,
+[data-testid="stChatMessage"] .stMarkdown strong,
+[data-testid="stChatMessage"] .stMarkdown em,
+[data-testid="stChatMessage"] .stMarkdown blockquote,
+[data-testid="stChatMessage"] .stMarkdown code {{ color:var(--tx-primary)!important; }}
 
-/* Doctor CTA */
-.da-cta-strip {
-    background: linear-gradient(135deg, #FFF8F0, #FFF3E8);
-    border: 1.5px solid #FFD8B8;
-    border-radius: 14px;
-    padding: 14px 18px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 0;
-}
-.da-cta-icon { font-size: 1.8rem; }
-.da-cta-text h5 { font-size:0.85rem;font-weight:700;color:#C25A00;margin:0 0 2px; }
-.da-cta-text p { font-size:0.78rem;color:#9A5020;margin:0; }
-.da-cta-btn {
-    margin-left:auto;
-    background:#FF8C42;
-    color:white;
-    border-radius:10px;
-    padding:8px 16px;
-    font-size:0.78rem;
-    font-weight:700;
-    white-space:nowrap;
-    flex-shrink:0;
-    text-decoration:none;
-}
+/* ── Result card ── */
+.da-result-card {{
+  background:var(--bg-card); border-radius:20px; overflow:hidden;
+  box-shadow:var(--sh-card); border:1px solid var(--bd-card); margin-top:8px;
+  transition:background 0.35s, border-color 0.35s;
+}}
+.da-result-header {{
+  background:linear-gradient(135deg,#00C2A8,#00A891);
+  padding:18px 22px; display:flex; align-items:center; gap:12px;
+}}
+.da-result-header-icon {{
+  width:40px; height:40px; background:rgba(255,255,255,0.2);
+  border-radius:12px; display:flex; align-items:center; justify-content:center;
+  font-size:18px; flex-shrink:0;
+}}
+.da-result-header-text h4 {{
+  font-size:0.75rem; font-weight:600; color:rgba(255,255,255,0.75);
+  text-transform:uppercase; letter-spacing:0.1em; margin:0 0 2px;
+}}
+.da-result-req {{ font-size:0.65rem; color:rgba(255,255,255,0.5); font-family:monospace; }}
+.da-result-body {{ padding:22px 24px 18px; }}
+.da-result-sub {{
+  font-size:0.7rem; font-weight:600; text-transform:uppercase;
+  letter-spacing:0.1em; color:var(--tx-muted); margin-bottom:6px;
+}}
+.da-disease-name {{ font-size:1.6rem; font-weight:700; color:#00A891; line-height:1.2; margin:0 0 16px; }}
+.da-confidence-row {{ display:flex; align-items:center; gap:10px; margin-bottom:18px; }}
+.da-confidence-bar {{ flex:1; background:var(--bg-confidence); border-radius:6px; height:8px; overflow:hidden; }}
+.da-confidence-fill {{
+  height:100%; background:linear-gradient(90deg,#00C2A8,#00E5CC);
+  border-radius:6px; animation:conf-fill 1s ease-out forwards;
+}}
+.da-confidence-pct {{ font-size:0.8rem; font-weight:700; color:#00A891; min-width:36px; }}
 
-/* Precautions */
-.da-precautions {
-    background: #F7FFFE;
-    border-top: 1px solid #E0F5F1;
-    padding: 20px 24px;
-}
-.da-precautions-title {
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: #A0BCB8;
-    margin-bottom: 14px;
-}
-.da-precaution-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 10px 0;
-    border-bottom: 1px solid #EAF5F2;
-}
-.da-precaution-item:last-child { border-bottom: none; }
-.da-precaution-bullet {
-    width: 24px; height: 24px;
-    background: #E6FAF7;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.65rem;
-    font-weight: 700;
-    color: #00A891;
-    flex-shrink: 0;
-}
-.da-precaution-text {
-    font-size: 0.87rem;
-    color: #3D6560;
-    line-height: 1.5;
-    padding-top: 3px;
-}
+.da-cta-strip {{
+  background:var(--bg-cta); border:1.5px solid var(--bd-cta);
+  border-radius:14px; padding:14px 18px; display:flex; align-items:center; gap:14px;
+}}
+.da-cta-icon {{ font-size:1.8rem; }}
+.da-cta-text h5 {{ font-size:0.85rem; font-weight:700; color:var(--tx-cta-h); margin:0 0 2px; }}
+.da-cta-text p  {{ font-size:0.78rem; color:var(--tx-cta-p); margin:0; }}
+.da-cta-btn {{
+  margin-left:auto; background:#FF8C42; color:white; border-radius:10px;
+  padding:8px 16px; font-size:0.78rem; font-weight:700;
+  white-space:nowrap; flex-shrink:0; text-decoration:none;
+}}
 
-/* Feedback */
-.da-feedback {
-    padding: 14px 24px;
-    border-top: 1px solid #EAF3F1;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.da-feedback-label { font-size:0.75rem;color:#A0BCB8; font-weight:500; }
-.da-thumb {
-    background: #F0FAF8;
-    border: 1.5px solid #C0E8E0;
-    border-radius: 8px;
-    padding: 5px 12px;
-    font-size: 0.9rem;
-    cursor: pointer;
-}
+.da-precautions {{
+  background:var(--bg-card-alt); border-top:1px solid var(--bd-main); padding:20px 24px;
+}}
+.da-precautions-title {{
+  font-size:0.72rem; font-weight:700; text-transform:uppercase;
+  letter-spacing:0.1em; color:var(--tx-muted); margin-bottom:14px;
+}}
+.da-precaution-item {{
+  display:flex; align-items:flex-start; gap:12px;
+  padding:10px 0; border-bottom:1px solid var(--bd-prec);
+}}
+.da-precaution-item:last-child {{ border-bottom:none; }}
+.da-precaution-bullet {{
+  width:24px; height:24px; background:var(--bg-bullet); border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:0.65rem; font-weight:700; color:#00A891; flex-shrink:0;
+}}
+.da-precaution-text {{ font-size:0.87rem; color:var(--tx-prec); line-height:1.5; padding-top:3px; }}
 
-/* Disclaimer */
-.da-disclaimer {
-    background: #F7F8FA;
-    border-top: 1px solid #EEF2F0;
-    padding: 12px 24px;
-    font-size: 0.7rem;
-    color: #A8BAB7;
-    line-height: 1.6;
-}
+.da-feedback {{
+  padding:14px 24px; border-top:1px solid var(--bd-feedback);
+  display:flex; align-items:center; gap:10px;
+}}
+.da-feedback-label {{ font-size:0.75rem; color:var(--tx-muted); font-weight:500; }}
+.da-thumb {{
+  background:var(--bg-thumb); border:1.5px solid var(--bd-metric);
+  border-radius:8px; padding:5px 12px; font-size:0.9rem; cursor:pointer;
+}}
 
-/* Info card */
-.da-info-card {
-    background: #FFFFFF;
-    border: 1.5px solid #E0EDEB;
-    border-radius: 16px;
-    overflow: hidden;
-    margin-top: 6px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-}
-.da-info-header {
-    background: #F0FAF8;
-    padding: 12px 18px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: #00A891;
-    border-bottom: 1px solid #E0EDEB;
-}
-.da-info-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 11px 18px;
-    border-bottom: 1px solid #F0F6F4;
-}
-.da-info-row:last-child { border-bottom:none; }
-.da-info-key { font-size:0.83rem;color:#6B8F88; }
-.da-info-val { font-size:0.83rem;font-weight:600;color:#1A2E2B; }
+.da-disclaimer {{
+  background:var(--bg-disclaimer); border-top:1px solid var(--bd-main);
+  padding:12px 24px; font-size:0.7rem; color:var(--tx-disclaimer); line-height:1.6;
+}}
 
-/* History item */
-.da-hist-item {
-    background: #FFFFFF;
-    border: 1.5px solid #E0EDEB;
-    border-radius: 12px;
-    padding: 12px 14px;
-    margin-bottom: 8px;
-    border-left: 4px solid #00C2A8;
-}
-.da-hist-disease { font-size:0.88rem;font-weight:700;color:#00A891; }
-.da-hist-symptoms { font-size:0.75rem;color:#A0BCB8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
-.da-hist-time { font-size:0.7rem;color:#C8DEDD;margin-top:3px; }
+.da-info-card {{
+  background:var(--bg-card); border:1.5px solid var(--bd-main); border-radius:16px;
+  overflow:hidden; margin-top:6px; box-shadow:var(--sh-card); transition:background 0.35s;
+}}
+.da-info-header {{
+  background:var(--bg-info-header); padding:12px 18px; font-size:0.72rem; font-weight:700;
+  text-transform:uppercase; letter-spacing:0.1em; color:#00A891;
+  border-bottom:1px solid var(--bd-main);
+}}
+.da-info-row {{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:11px 18px; border-bottom:1px solid var(--bd-main);
+}}
+.da-info-row:last-child {{ border-bottom:none; }}
+.da-info-key {{ font-size:0.83rem; color:var(--tx-info-key); }}
+.da-info-val {{ font-size:0.83rem; font-weight:600; color:var(--tx-info-val); }}
 
-/* Chat input */
-.stChatInputContainer {
-    background: #F0F6F5 !important;
-    border-top: 1px solid #D8EDEA !important;
-    padding: 14px 0 !important;
-}
-[data-testid="stChatInput"] {
-    background: #FFFFFF !important;
-    border: 1.5px solid #C8E8E3 !important;
-    border-radius: 14px !important;
-    color: #1A2E2B !important;
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
-    box-shadow: 0 2px 8px rgba(0,194,168,0.08) !important;
-}
-[data-testid="stChatInput"]:focus {
-    border-color: #00C2A8 !important;
-    box-shadow: 0 0 0 3px rgba(0,194,168,0.12) !important;
-}
+.da-hist-item {{
+  background:var(--bg-hist); border:1.5px solid var(--bd-hist); border-radius:12px;
+  padding:12px 14px; margin-bottom:8px; border-left:4px solid #00C2A8; transition:background 0.35s;
+}}
+.da-hist-disease {{ font-size:0.88rem; font-weight:700; color:#00A891; }}
+.da-hist-symptoms {{
+  font-size:0.75rem; color:var(--tx-hist-sym); margin-top:2px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}}
+.da-hist-time {{ font-size:0.7rem; color:var(--tx-hist-time); margin-top:3px; }}
 
-/* Sidebar */
-[data-testid="stSidebar"] {
-    background: #FFFFFF !important;
-    border-right: 1px solid #E0EDEB !important;
-}
-[data-testid="stSidebar"] * { color: #1A2E2B !important; }
-[data-testid="stSidebar"] h3 {
-    font-size: 0.72rem !important;
-    font-weight: 700 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.12em !important;
-    color: #A0BCB8 !important;
-}
+.stChatInputContainer {{
+  background:var(--bg-page)!important;
+  border-top:1px solid var(--bd-main)!important; padding:14px 0!important;
+}}
+[data-testid="stChatInput"] {{
+  background:var(--bg-input)!important; border:1.5px solid var(--bd-input)!important;
+  border-radius:14px!important; color:var(--tx-primary)!important;
+  font-family:'Plus Jakarta Sans',sans-serif!important; box-shadow:var(--sh-input)!important;
+}}
+[data-testid="stChatInput"]:focus {{
+  border-color:#00C2A8!important; box-shadow:0 0 0 3px rgba(0,194,168,0.15)!important;
+}}
 
-.da-patient-chip {
-    background: linear-gradient(135deg,#E6FAF7,#D0F5EF);
-    border: 1.5px solid #B8EDE6;
-    border-radius: 12px;
-    padding: 12px 14px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: #00A891;
-    margin: 10px 0;
-}
+[data-testid="stSidebar"] {{
+  background:var(--bg-sidebar)!important;
+  border-right:1px solid var(--bd-sidebar)!important; transition:background 0.35s;
+}}
+[data-testid="stSidebar"] * {{ color:var(--tx-primary)!important; }}
+[data-testid="stSidebar"] h3 {{
+  font-size:0.72rem!important; font-weight:700!important;
+  text-transform:uppercase!important; letter-spacing:0.12em!important;
+  color:var(--tx-muted)!important;
+}}
 
-.da-status-row {
-    display:flex;align-items:center;gap:10px;
-    padding:10px 0;border-bottom:1px solid #EAF3F1;
-}
-.da-dot-green { width:8px;height:8px;background:#00C2A8;border-radius:50%;flex-shrink:0; }
-.da-dot-red   { width:8px;height:8px;background:#FF6B6B;border-radius:50%;flex-shrink:0; }
-.da-status-label { font-size:0.78rem;color:#6B8F88; }
-.da-status-ok  { font-size:0.75rem;font-weight:600;color:#00A891!important;margin-left:auto; }
-.da-status-err { font-size:0.75rem;font-weight:600;color:#FF6B6B!important;margin-left:auto; }
+.da-patient-chip {{
+  background:var(--bg-patient); border:1.5px solid var(--bd-patient);
+  border-radius:12px; padding:12px 14px; font-size:0.78rem; font-weight:600;
+  color:#00A891; margin:10px 0;
+}}
+.da-metric-row {{ display:flex; gap:10px; margin:8px 0; }}
+.da-metric {{
+  flex:1; background:var(--bg-metric); border:1px solid var(--bd-metric);
+  border-radius:10px; padding:10px; text-align:center;
+}}
+.da-metric-num {{ font-size:1.4rem; font-weight:700; color:#00A891; }}
+.da-metric-label {{ font-size:0.68rem; color:var(--tx-secondary); font-weight:500; }}
 
-/* Metrics */
-.da-metric-row { display:flex;gap:10px;margin:8px 0; }
-.da-metric {
-    flex:1;background:#F0FAF8;border:1px solid #C8E8E3;
-    border-radius:10px;padding:10px;text-align:center;
-}
-.da-metric-num { font-size:1.4rem;font-weight:700;color:#00A891; }
-.da-metric-label { font-size:0.68rem;color:#6B8F88;font-weight:500; }
+.da-status-row {{
+  display:flex; align-items:center; gap:10px;
+  padding:10px 0; border-bottom:1px solid var(--bd-status);
+}}
+.da-dot-green {{ width:8px; height:8px; background:#00C2A8; border-radius:50%; flex-shrink:0; }}
+.da-dot-red   {{ width:8px; height:8px; background:#FF6B6B; border-radius:50%; flex-shrink:0; }}
+.da-status-label {{ font-size:0.78rem; color:var(--tx-secondary); }}
+.da-status-ok  {{ font-size:0.75rem; font-weight:600; color:#00A891!important; margin-left:auto; }}
+.da-status-err {{ font-size:0.75rem; font-weight:600; color:#FF6B6B!important; margin-left:auto; }}
 
-/* Quick chip buttons */
-.stButton > button {
-    background: #FFFFFF !important;
-    border: 1.5px solid #C8E8E3 !important;
-    border-radius: 30px !important;
-    color: #00A891 !important;
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
-    font-size: 0.78rem !important;
-    font-weight: 600 !important;
-    padding: 6px 10px !important;
-    transition: all 0.15s !important;
-}
-.stButton > button:hover {
-    background: #E6FAF7 !important;
-    border-color: #00C2A8 !important;
-}
+.stButton > button {{
+  background:var(--bg-chip)!important; border:1.5px solid var(--bd-chip)!important;
+  border-radius:30px!important; color:#00A891!important;
+  font-family:'Plus Jakarta Sans',sans-serif!important;
+  font-size:0.78rem!important; font-weight:600!important; padding:6px 10px!important;
+  transition:all 0.2s!important;
+}}
+.stButton > button:hover {{
+  background:var(--toggle-bg)!important; border-color:#00C2A8!important;
+}}
 
-@keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-[data-testid="stChatMessage"] { animation: fadeUp 0.2s ease-out both; }
+@keyframes fadeUp {{ from{{opacity:0;transform:translateY(6px)}} to{{opacity:1;transform:translateY(0)}} }}
+[data-testid="stChatMessage"] {{ animation:fadeUp 0.2s ease-out both; }}
+
+/* ── Quick-reply follow-up chips ── */
+.da-followup-chips {{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 14px 20px 16px;
+  background: var(--bg-card-alt);
+  border-top: 1px solid var(--bd-main);
+  border-radius: 0 0 18px 18px;
+}}
+.da-followup-label {{
+  width: 100%;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--tx-muted);
+  margin-bottom: 4px;
+}}
+.da-chip-btn {{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--bd-chip);
+  border-radius: 20px;
+  padding: 7px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #00A891;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}}
+.da-chip-btn:hover {{
+  background: var(--toggle-bg);
+  border-color: #00C2A8;
+  color: #00A891;
+}}
+.da-chip-btn.urgent {{
+  border-color: #FFB0B0;
+  color: #CC3333;
+  background: #FFF5F5;
+}}
+.da-chip-btn.urgent:hover {{ background:#FFE8E8; border-color:#FF8888; }}
+</style>
+""", unsafe_allow_html=True)
+
+# ── Inject theme CSS directly into parent document head ──
+# This is the most reliable approach — no class toggling needed
+_is_dark = st.session_state.get("dark_mode", False)
+
+if _is_dark:
+    _theme_vars = """
+    --bg-page:#0B1512; --bg-navbar:#0F1E1A; --bg-sidebar:#0D1A16;
+    --bg-card:#122018; --bg-card-alt:#0D1A14; --bg-input:#0F1E1A;
+    --bg-chip:#0F1E1A; --bg-info-header:#0D1E18; --bg-bullet:#0D2A20;
+    --bg-confidence:#0D2018; --bg-thumb:#0D2018; --bg-hist:#0F1E1A;
+    --bg-patient:linear-gradient(135deg,#0D2A20,#0A2018);
+    --bg-metric:#0D2018; --bg-disclaimer:#0A1510;
+    --bg-bubble-ai:#122018; --bg-cta:linear-gradient(135deg,#1E1008,#160C04);
+    --bd-main:#1A3028; --bd-card:#1A3028; --bd-input:#1E4030;
+    --bd-chip:#1E4030; --bd-hist:#1A3028; --bd-cta:#5A3010;
+    --bd-metric:#1E4030; --bd-patient:#1E4A30; --bd-status:#142A20;
+    --bd-prec:#142A1E; --bd-feedback:#142A20; --bd-bubble-ai:#1A3028;
+    --bd-sidebar:#1A3028;
+    --tx-primary:#D4EDE8; --tx-secondary:#6AABA0; --tx-muted:#3A6A5A;
+    --tx-prec:#7ABFB0; --tx-info-key:#6AABA0; --tx-info-val:#D4EDE8;
+    --tx-hist-sym:#3A6A5A; --tx-hist-time:#2A4A3A; --tx-disclaimer:#2A5040;
+    --tx-cta-h:#FF9B52; --tx-cta-p:#C07040;
+    --sh-card:0 4px 24px rgba(0,0,0,0.5); --sh-bubble:0 1px 8px rgba(0,0,0,0.3);
+    --sh-navbar:0 1px 12px rgba(0,0,0,0.4); --sh-input:0 2px 8px rgba(0,0,0,0.25);
+    --toggle-bg:#0D2A20; --toggle-bd:#1E4A30; --toggle-tx:#00C2A8;
+    """
+else:
+    _theme_vars = """
+    --bg-page:#F0F6F5; --bg-navbar:#FFFFFF; --bg-sidebar:#FFFFFF;
+    --bg-card:#FFFFFF; --bg-card-alt:#F7FFFE; --bg-input:#FFFFFF;
+    --bg-chip:#FFFFFF; --bg-info-header:#F0FAF8; --bg-bullet:#E6FAF7;
+    --bg-confidence:#EAF5F3; --bg-thumb:#F0FAF8; --bg-hist:#FFFFFF;
+    --bg-patient:linear-gradient(135deg,#E6FAF7,#D0F5EF);
+    --bg-metric:#F0FAF8; --bg-disclaimer:#F7F8FA;
+    --bg-bubble-ai:#FFFFFF; --bg-cta:linear-gradient(135deg,#FFF8F0,#FFF3E8);
+    --bd-main:#E0EDEB; --bd-card:#E5F0EE; --bd-input:#C8E8E3;
+    --bd-chip:#C8E8E3; --bd-hist:#E0EDEB; --bd-cta:#FFD8B8;
+    --bd-metric:#C8E8E3; --bd-patient:#B8EDE6; --bd-status:#EAF3F1;
+    --bd-prec:#EAF5F2; --bd-feedback:#EAF3F1; --bd-bubble-ai:#EAF3F1;
+    --bd-sidebar:#E0EDEB;
+    --tx-primary:#1A2E2B; --tx-secondary:#6B8F88; --tx-muted:#A0BCB8;
+    --tx-prec:#3D6560; --tx-info-key:#6B8F88; --tx-info-val:#1A2E2B;
+    --tx-hist-sym:#A0BCB8; --tx-hist-time:#C8DEDD; --tx-disclaimer:#A8BAB7;
+    --tx-cta-h:#C25A00; --tx-cta-p:#9A5020;
+    --sh-card:0 4px 20px rgba(0,0,0,0.07); --sh-bubble:0 1px 6px rgba(0,0,0,0.06);
+    --sh-navbar:0 1px 8px rgba(0,194,168,0.07); --sh-input:0 2px 8px rgba(0,194,168,0.08);
+    --toggle-bg:#E6FAF7; --toggle-bd:#B8EDE6; --toggle-tx:#00A891;
+    """
+
+st.markdown(f"""
+<style>
+  :root {{ {_theme_vars} }}
+  .stApp {{ background-color: var(--bg-page) !important; transition: background-color 0.35s ease; }}
+  [data-testid="stSidebar"] {{ background: var(--bg-sidebar) !important; border-right: 1px solid var(--bd-sidebar) !important; }}
+  [data-testid="stSidebar"] * {{ color: var(--tx-primary) !important; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -504,11 +523,12 @@ def detect_intent(text: str) -> str:
     patterns = {
         "gratitude": r"\b(thank|thanks|cảm ơn|camon|thnx|ty\b|thx|appreciate|great|helpful|perfect)\b",
         "greeting":  r"^(hi|hello|hey|xin chào|chào|good morning|good afternoon|good evening)\b",
-        "reset":     r"\b(clear|reset|start over|bắt đầu lại|xóa|new session|restart)\b",
+        "reset":     r"^(clear|reset|start over|bắt đầu lại|xóa|new session|restart)$",
         "history":   r"\b(history|lịch sử|past|previous|before|earlier|my diagnos)\b",
         "pipeline":  r"\b(pipeline|kafka|spark|redis|sbert|how (it works|does this work)|architecture|technology|tech)\b",
         "help":      r"\b(help|hướng dẫn|how (do|can)|what (can|should)|guide|usage|instruction)\b",
-        "followup":  r"\b(what (should|do) i (do|take)|next step|treatment|medicine|see a doctor|when to|dangerous|serious|emergency|should i)\b",
+        "followup":  r"\b(what (should|do) i (do|take)|next step|treatment|medicine|when to|should i|what do i do)\b",
+        "danger":    r"\b(dangerous|serious|emergency|risk|nguy hiểm|nghiêm trọng|is it bad|warning sign|red flag|when.*hospital|should i go)\b",
         "clarify":   r"\b(what (is|does|are)|explain|tell me|elaborate|clarify|mean|tại sao|là gì)\b",
         "doctor":    r"\b(see a doctor|book|appointment|consult|GP|specialist|clinic|doctor now)\b",
     }
@@ -576,21 +596,156 @@ Your symptoms are sent to a Kafka queue, processed by a Spark streaming job, sem
 """
 
 
+# ── Severity knowledge base ──
+SEVERITY_MAP = {
+    "urgent": [
+        "heart attack", "stroke", "pneumonia", "tuberculosis", "malaria",
+        "dengue", "typhoid", "hepatitis", "jaundice", "aids", "chronic cholestasis",
+        "paralysis (brain hemorrhage)", "brain hemorrhage", "alcoholic hepatitis",
+        "hypoglycemia", "hyperthyroidism", "hypothyroidism", "diabetes",
+    ],
+    "moderate": [
+        "bronchial asthma", "urinary tract infection", "gastroenteritis",
+        "peptic ulcer disease", "migraine", "cervical spondylosis",
+        "varicose veins", "hypertension", "arthritis", "psoriasis",
+        "fungal infection", "chicken pox", "dengue", "dimorphic hemmorhoids(piles)",
+        "drug reaction", "allergy",
+    ],
+    "mild": [
+        "common cold", "acne", "back pain", "impetigo",
+        "chronic fatigue syndrome", "vertigo", "gerd",
+    ],
+}
+
+SEVERITY_CONFIG = {
+    "urgent": {
+        "emoji": "🚨",
+        "label": "High Severity",
+        "color": "#FF4444",
+        "bg": "#FFF0F0",
+        "border": "#FFB0B0",
+        "alert": "This condition may require **immediate medical attention**.",
+        "steps": [
+            "🚨 **Do not delay** — contact a doctor or go to the nearest clinic/ER now",
+            "📵 **Do not self-medicate** or ignore worsening symptoms",
+            "💧 Stay calm, rest, and keep hydrated while arranging care",
+            "📋 Note down your symptoms, their onset time, and any medications you take",
+            "🚑 Call emergency services if you experience chest pain, difficulty breathing, or loss of consciousness",
+        ],
+        "cta": "🩺 See a Doctor Now — Available in &lt;5 min",
+    },
+    "moderate": {
+        "emoji": "⚠️",
+        "label": "Moderate Severity",
+        "color": "#FF8C00",
+        "bg": "#FFF8F0",
+        "border": "#FFD8A0",
+        "alert": "This condition should be **monitored carefully** and treated promptly.",
+        "steps": [
+            "🛌 **Rest well** — avoid strenuous activities for at least 24–48 hours",
+            "💧 **Stay hydrated** — water, electrolytes, or clear soups",
+            "🌡️ **Monitor your symptoms** — track fever, pain levels, and any new symptoms",
+            "💊 Consult a pharmacist before taking any OTC medication",
+            "📅 **Book a consultation** within 24 hours if symptoms do not improve",
+        ],
+        "cta": "📅 Book a Consultation — Doctor Anywhere",
+    },
+    "mild": {
+        "emoji": "✅",
+        "label": "Mild Severity",
+        "color": "#00A891",
+        "bg": "#F0FAF8",
+        "border": "#B8EDE6",
+        "alert": "This condition is generally **manageable at home** with basic care.",
+        "steps": [
+            "🛌 **Rest** and avoid overexertion",
+            "💧 **Keep hydrated** and maintain a balanced diet",
+            "🌿 Use standard OTC remedies appropriate for your symptoms",
+            "📆 Monitor for 2–3 days; see a doctor if symptoms persist or worsen",
+            "😷 Avoid close contact with others if the condition is contagious",
+        ],
+        "cta": "💬 Chat with a Doctor — Non-urgent",
+    },
+}
+
+def get_severity(disease: str) -> str:
+    d = disease.lower().strip()
+    for level, diseases in SEVERITY_MAP.items():
+        if any(d in dis or dis in d for dis in diseases):
+            return level
+    return "moderate"  # default
+
+
 def reply_followup(last_disease):
     if not last_disease:
         return (
             "I don't have a recent symptom check on file yet. "
             "Please describe your symptoms first and I'll provide guidance alongside the result. 🩺"
         )
-    return (
-        f"Based on your earlier assessment of **{last_disease}**, here are some general steps:\n\n"
-        "1. **Rest** and monitor your symptoms over the next 24–48 hours\n"
-        "2. **Stay hydrated** — drink plenty of water or electrolyte fluids\n"
-        "3. **Avoid self-medicating** without professional advice\n"
-        "4. **Seek immediate help** if you experience: difficulty breathing, chest pain, confusion, or fever above 39.5°C\n\n"
-        "💊 **Want a proper prescription?** Our GPs are online right now.\n\n"
-        "> This is general guidance only — a Doctor Anywhere GP can give you a personalized treatment plan in minutes."
-    )
+    severity = get_severity(last_disease)
+    cfg = SEVERITY_CONFIG[severity]
+    steps_html = "".join(f"<li>{s}</li>" for s in cfg["steps"])
+    return f"""
+<div style="background:var(--bg-card);border:1.5px solid var(--bd-card);border-radius:18px;overflow:hidden;margin-top:4px;box-shadow:var(--sh-card);">
+  <div style="background:{cfg['bg']};border-bottom:1.5px solid {cfg['border']};padding:14px 20px;display:flex;align-items:center;gap:10px;">
+    <span style="font-size:1.4rem;">{cfg['emoji']}</span>
+    <div>
+      <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:{cfg['color']};">{cfg['label']}</div>
+      <div style="font-size:0.85rem;color:var(--tx-primary);font-weight:500;margin-top:2px;">{cfg['alert']}</div>
+    </div>
+  </div>
+  <div style="padding:18px 22px;">
+    <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--tx-muted);margin-bottom:12px;">Recommended next steps for <em>{last_disease}</em></div>
+    <ul style="margin:0;padding-left:4px;list-style:none;display:flex;flex-direction:column;gap:10px;">
+      {steps_html}
+    </ul>
+  </div>
+  <div style="background:{cfg['bg']};border-top:1.5px solid {cfg['border']};padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+    <div style="font-size:0.8rem;color:var(--tx-secondary);">For personalized advice, speak with a certified physician.</div>
+    <a href="https://doctoranywhere.com/da-virtual-clinic/" target="_blank"
+       style="background:#00C2A8;color:white;border-radius:10px;padding:8px 16px;font-size:0.75rem;font-weight:700;text-decoration:none;white-space:nowrap;flex-shrink:0;">{cfg['cta']}</a>
+  </div>
+</div>"""
+
+
+def reply_danger(last_disease):
+    if not last_disease:
+        return "Please run a symptom check first so I can assess potential risks."
+    severity = get_severity(last_disease)
+    cfg = SEVERITY_CONFIG[severity]
+    warnings = {
+        "urgent": [
+            "High fever above 39.5°C that doesn't respond to medication",
+            "Difficulty breathing or shortness of breath",
+            "Chest pain or tightness",
+            "Sudden confusion, slurred speech, or loss of consciousness",
+            "Severe vomiting or inability to keep fluids down",
+            "Rapid worsening of any symptom within hours",
+        ],
+        "moderate": [
+            "Symptoms not improving after 48 hours of home care",
+            "Fever above 38.5°C lasting more than 2 days",
+            "Significant pain that disrupts sleep or daily activity",
+            "New symptoms appearing alongside the original condition",
+        ],
+        "mild": [
+            "Symptoms lasting more than 5–7 days without improvement",
+            "Fever above 38°C in adults or any fever in infants",
+            "Symptoms suddenly getting much worse",
+        ],
+    }
+    flags = "".join(f'<li style="padding:6px 0;border-bottom:1px solid {cfg["border"]};color:var(--tx-primary);">⚠️ &nbsp;{w}</li>' for w in warnings[severity])
+    return f"""
+<div style="background:var(--bg-card);border:1.5px solid {cfg['border']};border-radius:18px;overflow:hidden;margin-top:4px;box-shadow:var(--sh-card);">
+  <div style="background:{cfg['bg']};padding:14px 20px;border-bottom:1.5px solid {cfg['border']};display:flex;align-items:center;gap:10px;">
+    <span style="font-size:1.3rem;">{cfg['emoji']}</span>
+    <div style="font-size:0.85rem;font-weight:600;color:{cfg['color']};">Warning signs for <em>{last_disease}</em> — seek help if you notice:</div>
+  </div>
+  <ul style="margin:0;padding:6px 22px 10px;list-style:none;">{flags}</ul>
+  <div style="padding:12px 22px;font-size:0.75rem;color:var(--tx-muted);">
+    If any of the above apply, contact a Doctor Anywhere GP immediately or call your local emergency number.
+  </div>
+</div>"""
 
 
 def reply_doctor():
@@ -637,7 +792,11 @@ def reply_clarify(last_disease):
     return "Could you be more specific? Try asking about a symptom, condition, or how DA Assist works."
 
 
-def build_result_html(req_id, disease, advice_list):
+def build_result_html(req_id, disease, advice_list, confidence=87):
+    severity = get_severity(disease)
+    severity_class = "urgent" if severity == "urgent" else ""
+    danger_icon = "🚨" if severity == "urgent" else ("⚠️" if severity == "moderate" else "✅")
+    disease_safe = disease.replace("'", "")
     precaution_html = ""
     if advice_list:
         items = ""
@@ -668,8 +827,8 @@ def build_result_html(req_id, disease, advice_list):
     <div class="da-disease-name">{disease}</div>
     <div style="font-size:0.78rem;color:#A0BCB8;font-weight:500;margin-bottom:6px;">Confidence score</div>
     <div class="da-confidence-row">
-      <div class="da-confidence-bar"><div class="da-confidence-fill"></div></div>
-      <span class="da-confidence-pct">87%</span>
+      <div class="da-confidence-bar"><div class="da-confidence-fill" style="width:{confidence}%;transition:width 1s ease-out;"></div></div>
+      <span class="da-confidence-pct">{confidence}%</span>
     </div>
     <div class="da-cta-strip">
       <div class="da-cta-icon">👨‍⚕️</div>
@@ -735,6 +894,7 @@ for key, default in [
     ("last_disease", ""),
     ("diagnosis_history", []),
     ("query_count", 0),
+    ("dark_mode", False),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -789,6 +949,13 @@ with st.sidebar:
         f'</div>',
         unsafe_allow_html=True
     )
+
+    # ── Theme toggle ──
+    is_dark = st.session_state.get("dark_mode", False)
+    toggle_label = "☀️  Light Mode" if is_dark else "🌙  Dark Mode"
+    if st.button(toggle_label, use_container_width=True, key="theme_toggle"):
+        st.session_state.dark_mode = not is_dark
+        st.rerun()
 
     if st.button("🔄 New Session", use_container_width=True):
         st.session_state.messages = [{
@@ -884,6 +1051,7 @@ def handle_input(user_input: str):
         "history":   lambda: reply_history(st.session_state.diagnosis_history),
         "followup":  lambda: reply_followup(st.session_state.last_disease),
         "doctor":    lambda: reply_doctor(),
+        "danger":    lambda: reply_danger(st.session_state.last_disease),
         "clarify":   lambda: reply_clarify(st.session_state.last_disease),
     }
 
@@ -945,7 +1113,9 @@ def handle_input(user_input: str):
 
         ph = st.empty()
         if result_found:
-            html = build_result_html(req_id, predicted_disease, advice_list)
+            confidence_score = parsed.get("confidence", 87)
+            html = build_result_html(req_id, predicted_disease, advice_list, confidence_score)
+
             ph.markdown(html, unsafe_allow_html=True)
             st.session_state.messages.append({"role": "assistant", "content": html})
             st.session_state.last_disease = predicted_disease
@@ -955,6 +1125,34 @@ def handle_input(user_input: str):
                 "time": datetime.datetime.now().strftime("%H:%M"),
                 "req_id": req_id,
             })
+
+            # ── Quick-reply buttons (real st.buttons) ──
+            severity = get_severity(predicted_disease)
+            danger_icon = "🚨" if severity == "urgent" else ("⚠️" if severity == "moderate" else "✅")
+            st.markdown(
+                '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;padding:4px 0 2px;">'
+                '<span style="width:100%;font-size:0.68rem;font-weight:700;text-transform:uppercase;'
+                'letter-spacing:0.1em;color:var(--tx-muted);margin-bottom:2px;">💬 Quick follow-up</span>'
+                '</div>',
+                unsafe_allow_html=True
+            )
+            fc1, fc2, fc3, fc4 = st.columns(4)
+            with fc1:
+                if st.button("🩺 Next steps", key=f"fu_next_{req_id}", use_container_width=True):
+                    st.session_state._chip = "What should I do next?"
+                    st.rerun()
+            with fc2:
+                if st.button(f"{danger_icon} Dangerous?", key=f"fu_danger_{req_id}", use_container_width=True):
+                    st.session_state._chip = "Is this dangerous?"
+                    st.rerun()
+            with fc3:
+                if st.button("👨‍⚕️ See doctor?", key=f"fu_doc_{req_id}", use_container_width=True):
+                    st.session_state._chip = "Should I see a doctor?"
+                    st.rerun()
+            with fc4:
+                if st.button("📖 Tell me more", key=f"fu_more_{req_id}", use_container_width=True):
+                    st.session_state._chip = f"Tell me more about {predicted_disease}"
+                    st.rerun()
         else:
             err = """
 <div class="da-result-card">

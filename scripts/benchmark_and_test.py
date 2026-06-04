@@ -13,8 +13,8 @@ plt.rcParams.update({'font.size': 10, 'axes.labelsize': 12, 'axes.titlesize': 14
 CLEANED_DATA_PATH = 'data/cleaned/cleaned_dataset.csv'
 MODEL_DIR = 'models/'
 
-COSINE_MIN = 0.20
-COSINE_MAX = 0.80
+COSINE_MIN = 0.25
+COSINE_MAX = 0.65
 
 def smart_display(df):
     try:
@@ -97,7 +97,7 @@ sns.heatmap(
 )
 
 plt.title('AI Engine Performance: Confusion Matrix Heatmap', fontweight='bold', pad=20, fontsize=16)
-plt.xlabel('Predicted Disease Class By Random Forest', fontweight='bold', labelpad=15)
+plt.xlabel('Predicted Disease Class By SBERT Engine', fontweight='bold', labelpad=15)
 plt.ylabel('Actual True Disease Class (Ground Truth)', fontweight='bold', labelpad=15)
 plt.xticks(rotation=45, ha='right')
 plt.yticks(rotation=0)
@@ -122,7 +122,7 @@ test_cases_free = [
 ]
 
 for case in test_cases_free:
-    user_input = str(case["User_Speech"]).lower().strip()
+    user_input = str(case["User_Speech"]).lower().strip().replace('_', ' ')
     user_vector = sbert_model.encode([user_input])
 
     raw_similarities = cosine_similarity(user_vector, X_train)[0]
@@ -132,7 +132,6 @@ for case in test_cases_free:
     predicted_label_code = y_train[best_match_idx]
     predicted_disease_name = le.inverse_transform([predicted_label_code])[0]
 
-    # Tính toán hiệu chuẩn thang đo Confidence tương đồng
     clipped_cosine = np.clip(best_raw_cosine, COSINE_MIN, COSINE_MAX)
     calibrated_confidence = ((clipped_cosine - COSINE_MIN) / (COSINE_MAX - COSINE_MIN)) * 100
 

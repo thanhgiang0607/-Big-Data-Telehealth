@@ -52,8 +52,8 @@ rf_model.fit(X_train, y_train)
 # Benchmarking
 print("\nEvaluating Candidate Engines over Validation Test Set...")
 print("-" * 70)
-COSINE_MIN = 0.20
-COSINE_MAX = 0.80
+COSINE_MIN = 0.25
+COSINE_MAX = 0.65
 
 y_pred_rf = []
 y_pred_softmax = []
