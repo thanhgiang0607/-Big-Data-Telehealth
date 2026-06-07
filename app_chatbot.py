@@ -853,6 +853,40 @@ def build_result_html(req_id, disease, advice_list, confidence=87):
 
 
 # ─────────────────────────────────────────────
+#  HEALTH CHECKS
+# ─────────────────────────────────────────────
+def check_services():
+    print("LOG: [System] Starting service health checks...")
+    
+    # Check Redis
+    try:
+        r = redis.Redis(host='localhost', port=6379, db=0, socket_timeout=2)
+        if r.ping():
+            print("LOG: [Redis] ✅ Online (localhost:6379)")
+        else:
+            print("LOG: [Redis] ❌ Connection failed (localhost:6379)")
+    except Exception as e:
+        print(f"LOG: [Redis] ❌ Error: {e}")
+
+    # Check Kafka
+    try:
+        import socket
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(2)
+        result = sock.connect_ex(('localhost', 9092))
+        if result == 0:
+            print("LOG: [Kafka] ✅ Online (localhost:9092)")
+        else:
+            print(f"LOG: [Kafka] ❌ Offline (localhost:9092) - Error Code: {result}")
+        sock.close()
+    except Exception as e:
+        print(f"LOG: [Kafka] ❌ Error: {e}")
+    
+    print("LOG: [System] Health checks completed.\n")
+
+check_services()
+
+# ─────────────────────────────────────────────
 #  INFRA INIT
 # ─────────────────────────────────────────────
 @st.cache_resource
@@ -1079,6 +1113,7 @@ def handle_input(user_input: str):
         return
 
     req_id = f"REQ-{uuid.uuid4().hex[:6].upper()}"
+    print(f"LOG: [Pipeline] 📨 Sending request {req_id} to Kafka for patient {st.session_state.patient_id}")
     producer.send('telehealth-symptoms', value={
         "request_id": req_id,
         "patient_id": st.session_state.patient_id,
@@ -1094,12 +1129,14 @@ def handle_input(user_input: str):
             predicted_disease = ""
             advice_list = []
 
-            for _ in range(35):
+            print(f"LOG: [Pipeline] 🔍 Polling Redis for result ({redis_key})...")
+            for i in range(200):
                 time.sleep(0.15)
                 cached = redis_client.get(redis_key)
                 if cached:
                     parsed = json.loads(cached.decode('utf-8'))
                     if parsed.get("request_id") == req_id:
+                        print(f"LOG: [Pipeline] ✅ Result received for {req_id} after {i+1} attempts.")
                         predicted_disease = parsed["predicted_disease"]
                         if df_precaution is not None:
                             match = df_precaution[df_precaution['Disease_match'] == predicted_disease.lower().strip()]
@@ -1110,6 +1147,9 @@ def handle_input(user_input: str):
                                         advice_list.append(str(val).capitalize())
                         result_found = True
                         break
+            
+            if not result_found:
+                print(f"LOG: [Pipeline] ❌ Timeout: No result found for {req_id} after 35 attempts.")
 
         ph = st.empty()
         if result_found:
