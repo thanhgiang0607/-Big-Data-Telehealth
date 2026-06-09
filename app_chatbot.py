@@ -198,8 +198,6 @@ html, body, [class*="css"] {{ font-family: 'Plus Jakarta Sans', sans-serif; }}
 [data-testid="stChatMessage"] {{ background:transparent!important; }}
 [data-testid="stChatMessage"]>div {{ background:transparent!important; }}
 
-/* Streamlit 1.3x+ uses data-testid="stChatMessageContent" instead of data-role */
-/* USER bubble — teal background, white text */
 [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) .stMarkdown,
 [data-testid="stChatMessage"][data-role="user"] .stMarkdown {{
   background:#00C2A8 !important;
@@ -213,7 +211,6 @@ html, body, [class*="css"] {{ font-family: 'Plus Jakarta Sans', sans-serif; }}
 [data-testid="stChatMessage"][data-role="user"] .stMarkdown,
 [data-testid="stChatMessage"][data-role="user"] .stMarkdown * {{ color:#FFFFFF!important; }}
 
-/* ASSISTANT bubble — card background, themed text */
 [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) .stMarkdown,
 [data-testid="stChatMessage"][data-role="assistant"] .stMarkdown {{
   background:var(--bg-bubble-ai) !important;
@@ -227,7 +224,6 @@ html, body, [class*="css"] {{ font-family: 'Plus Jakarta Sans', sans-serif; }}
 [data-testid="stChatMessage"][data-role="assistant"] .stMarkdown,
 [data-testid="stChatMessage"][data-role="assistant"] .stMarkdown * {{ color:var(--tx-primary)!important; }}
 
-/* Nuclear fallback — every .stMarkdown inside a chat message gets dark text */
 [data-testid="stChatMessage"] .stMarkdown p,
 [data-testid="stChatMessage"] .stMarkdown span,
 [data-testid="stChatMessage"] .stMarkdown li,
@@ -403,61 +399,59 @@ html, body, [class*="css"] {{ font-family: 'Plus Jakarta Sans', sans-serif; }}
   background:var(--toggle-bg)!important; border-color:#00C2A8!important;
 }}
 
+/* ── FIX 3: st.warning() — override Streamlit default yellow ── */
+[data-testid="stSidebar"] [data-testid="stAlert"],
+[data-testid="stAlert"][data-baseweb="notification"] {{
+  border-radius: 12px !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+}}
+/* warning box (offline services) */
+div[data-testid="stAlert"][kind="warning"],
+div[data-baseweb="notification"][kind="warning"] {{
+  background: #FFF8EE !important;
+  border: 1.5px solid #FFD8A0 !important;
+  color: #8A5500 !important;
+  border-radius: 12px !important;
+}}
+div[data-testid="stAlert"][kind="warning"] *,
+div[data-baseweb="notification"][kind="warning"] * {{
+  color: #8A5500 !important;
+}}
+
+/* ── FIX 4: st.spinner() — teal color ── */
+[data-testid="stSpinner"] > div {{
+  border-top-color: #00C2A8 !important;
+}}
+
 @keyframes fadeUp {{ from{{opacity:0;transform:translateY(6px)}} to{{opacity:1;transform:translateY(0)}} }}
 [data-testid="stChatMessage"] {{ animation:fadeUp 0.2s ease-out both; }}
 
 /* ── Quick-reply follow-up chips ── */
 .da-followup-chips {{
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 14px;
-  padding: 14px 20px 16px;
-  background: var(--bg-card-alt);
-  border-top: 1px solid var(--bd-main);
-  border-radius: 0 0 18px 18px;
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px;
+  padding: 14px 20px 16px; background: var(--bg-card-alt);
+  border-top: 1px solid var(--bd-main); border-radius: 0 0 18px 18px;
 }}
 .da-followup-label {{
-  width: 100%;
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--tx-muted);
-  margin-bottom: 4px;
+  width: 100%; font-size: 0.68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--tx-muted); margin-bottom: 4px;
 }}
 .da-chip-btn {{
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--bg-card);
-  border: 1.5px solid var(--bd-chip);
-  border-radius: 20px;
-  padding: 7px 14px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #00A891;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.15s;
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--bg-card); border: 1.5px solid var(--bd-chip);
+  border-radius: 20px; padding: 7px 14px; font-size: 0.78rem;
+  font-weight: 600; color: #00A891; cursor: pointer;
+  text-decoration: none; transition: all 0.15s;
   font-family: 'Plus Jakarta Sans', sans-serif;
 }}
-.da-chip-btn:hover {{
-  background: var(--toggle-bg);
-  border-color: #00C2A8;
-  color: #00A891;
-}}
-.da-chip-btn.urgent {{
-  border-color: #FFB0B0;
-  color: #CC3333;
-  background: #FFF5F5;
-}}
+.da-chip-btn:hover {{ background: var(--toggle-bg); border-color: #00C2A8; color: #00A891; }}
+.da-chip-btn.urgent {{ border-color: #FFB0B0; color: #CC3333; background: #FFF5F5; }}
 .da-chip-btn.urgent:hover {{ background:#FFE8E8; border-color:#FF8888; }}
 </style>
 """, unsafe_allow_html=True)
 
-# ── Inject theme CSS directly into parent document head ──
-# This is the most reliable approach — no class toggling needed
+# ── Inject theme CSS — resolves light/dark for Python-aware values ──
 _is_dark = st.session_state.get("dark_mode", False)
 
 if _is_dark:
@@ -505,12 +499,117 @@ else:
     --toggle-bg:#E6FAF7; --toggle-bd:#B8EDE6; --toggle-tx:#00A891;
     """
 
+# Hardcoded colours derived from _is_dark for elements that escape CSS variable scope
+_popup_bg     = "#122018" if _is_dark else "#FFFFFF"
+_popup_bd     = "#1E4030" if _is_dark else "#C8E8E3"
+_popup_tx     = "#D4EDE8" if _is_dark else "#1A2E2B"
+_popup_hover  = "#0D2A20" if _is_dark else "#E6FAF7"
+_popup_sel_tx = "#00C2A8" if _is_dark else "#00A891"
+_tip_bg       = "#0D2A20" if _is_dark else "#E6FAF7"
+_tip_bd       = "#1E4A30" if _is_dark else "#B8EDE6"
+_tip_tx       = "#7ABFB0" if _is_dark else "#2D6B60"
+_tip_icon     = "#00C2A8" if _is_dark else "#00A891"
+_sidebar_head = "#D4EDE8" if _is_dark else "#1A2E2B"
+
 st.markdown(f"""
 <style>
   :root {{ {_theme_vars} }}
   .stApp {{ background-color: var(--bg-page) !important; transition: background-color 0.35s ease; }}
   [data-testid="stSidebar"] {{ background: var(--bg-sidebar) !important; border-right: 1px solid var(--bd-sidebar) !important; }}
   [data-testid="stSidebar"] * {{ color: var(--tx-primary) !important; }}
+
+  /* ── FIX 1: Sidebar header — was hardcoded #1A2E2B, now theme-aware ── */
+  .da-sidebar-header {{ color: {_sidebar_head} !important; }}
+
+  /* ── Selectbox / Dropdown (BaseUI) ── */
+  [data-testid="stSidebar"] [data-baseweb="select"] > div:first-child {{
+    background-color: var(--bg-input) !important;
+    border-color: var(--bd-input) !important;
+    border-radius: 10px !important;
+  }}
+  [data-testid="stSidebar"] [data-baseweb="select"] [data-testid="stMarkdownContainer"] p,
+  [data-testid="stSidebar"] [data-baseweb="select"] [data-testid="stMarkdownContainer"] span,
+  [data-testid="stSidebar"] [data-baseweb="select"] span,
+  [data-testid="stSidebar"] [data-baseweb="select"] div,
+  [data-testid="stSidebar"] [data-baseweb="select"] input,
+  [data-testid="stSidebar"] label {{
+    background-color: transparent !important;
+    color: var(--tx-primary) !important;
+    -webkit-text-fill-color: var(--tx-primary) !important;
+  }}
+
+  /* ── Dropdown listbox popup — hardcoded because it renders outside sidebar DOM ── */
+  [data-baseweb="popover"] [data-baseweb="menu"],
+  [data-baseweb="popover"] ul {{
+    background-color: {_popup_bg} !important;
+    border: 1px solid {_popup_bd} !important;
+    border-radius: 10px !important;
+  }}
+  [data-baseweb="menu"] li,
+  [data-baseweb="menu"] [role="option"],
+  [data-baseweb="menu"] li *,
+  [data-baseweb="menu"] [role="option"] * {{
+    background-color: {_popup_bg} !important;
+    color: {_popup_tx} !important;
+    -webkit-text-fill-color: {_popup_tx} !important;
+  }}
+  [data-baseweb="menu"] li:hover,
+  [data-baseweb="menu"] [role="option"]:hover,
+  [data-baseweb="menu"] [aria-selected="true"],
+  [data-baseweb="menu"] li:hover *,
+  [data-baseweb="menu"] [role="option"]:hover *,
+  [data-baseweb="menu"] [aria-selected="true"] * {{
+    background-color: {_popup_hover} !important;
+    color: {_popup_sel_tx} !important;
+    -webkit-text-fill-color: {_popup_sel_tx} !important;
+  }}
+
+  /* ── FIX 2: st.info() Daily Health Tip — replace Streamlit blue with brand teal ── */
+  [data-testid="stSidebar"] [data-testid="stAlert"],
+  [data-testid="stSidebar"] div[data-baseweb="notification"] {{
+    background-color: {_tip_bg} !important;
+    border: 1.5px solid {_tip_bd} !important;
+    border-radius: 12px !important;
+    color: {_tip_tx} !important;
+  }}
+  [data-testid="stSidebar"] [data-testid="stAlert"] *,
+  [data-testid="stSidebar"] div[data-baseweb="notification"] * {{
+    color: {_tip_tx} !important;
+    -webkit-text-fill-color: {_tip_tx} !important;
+  }}
+  /* Info icon — teal */
+  [data-testid="stSidebar"] [data-testid="stAlert"] svg,
+  [data-testid="stSidebar"] div[data-baseweb="notification"] svg {{
+    fill: {_tip_icon} !important;
+    color: {_tip_icon} !important;
+  }}
+
+  /* ── Download button ── */
+  [data-testid="stSidebar"] [data-testid="stDownloadButton"] > button {{
+    background: var(--bg-chip) !important;
+    border: 1.5px solid var(--bd-chip) !important;
+    border-radius: 30px !important;
+    color: #00A891 !important;
+    -webkit-text-fill-color: #00A891 !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    padding: 6px 10px !important;
+    transition: all 0.2s !important;
+  }}
+  [data-testid="stSidebar"] [data-testid="stDownloadButton"] > button:hover {{
+    background: var(--toggle-bg) !important;
+    border-color: #00C2A8 !important;
+  }}
+
+  /* ── Slider track & thumb ── */
+  [data-testid="stSidebar"] [data-testid="stSlider"] [data-baseweb="slider"] [role="slider"] {{
+    background-color: #00C2A8 !important;
+    border-color: #00C2A8 !important;
+  }}
+  [data-testid="stSidebar"] [data-testid="stSlider"] div[data-testid="stTickBar"] {{
+    color: var(--tx-muted) !important;
+  }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -531,11 +630,79 @@ def detect_intent(text: str) -> str:
         "danger":    r"\b(dangerous|serious|emergency|risk|nguy hiểm|nghiêm trọng|is it bad|warning sign|red flag|when.*hospital|should i go)\b",
         "clarify":   r"\b(what (is|does|are)|explain|tell me|elaborate|clarify|mean|tại sao|là gì)\b",
         "doctor":    r"\b(see a doctor|book|appointment|consult|GP|specialist|clinic|doctor now)\b",
+        "prevention": r"\b(prevent|avoid|protection|hạn chế|phòng ngừa|phòng tránh)\b",
+        "causes":     r"\b(cause|why|how did i get|reason|tại sao|nguyên nhân)\b",
+        "contagious": r"\b(contagious|catch|pass on|spread|infectious|lây|truyền nhiễm)\b",
+        "diet":       r"\b(eat|food|diet|nutrition|meal|ăn gì|kiêng gì|dinh dưỡng)\b",
+        "clinic":     r"\b(nearest|location|address|where is the clinic|hospital|phòng khám|ở đâu)\b",
     }
     for intent, pattern in patterns.items():
         if re.search(pattern, t):
             return intent
     return "symptom"
+
+
+# ─────────────────────────────────────────────
+#  HELPERS & UTILS
+# ─────────────────────────────────────────────
+def set_chip(action):
+    st.session_state._chip = action
+
+def handle_feedback_callback(req_id, feedback_type):
+    if log_feedback(req_id, feedback_type):
+        st.session_state.feedback_given.append(req_id)
+        msg = "Thank you for your feedback! 💚" if feedback_type == "positive" else "Feedback received. We'll improve! 🙏"
+        st.toast(msg)
+
+def get_daily_health_tip():
+    tips = [
+        "💧 Drink at least 8 glasses of water a day to stay hydrated and support your immune system.",
+        "🚶‍♂️ A 30-minute walk every day can significantly improve your cardiovascular health.",
+        "🥗 Include more leafy greens like spinach and kale in your diet for essential vitamins.",
+        "😴 Aim for 7-9 hours of quality sleep to help your body recover and stay sharp.",
+        "🧘‍♀️ Practicing mindfulness or meditation for 10 minutes can reduce stress and anxiety.",
+        "🧴 Don't forget to apply sunscreen even on cloudy days to protect your skin.",
+        "🍎 An apple a day... well, it's a great source of fiber and vitamin C!",
+    ]
+    day_of_year = datetime.datetime.now().timetuple().tm_yday
+    return tips[day_of_year % len(tips)]
+
+
+def log_feedback(req_id, feedback_type):
+    if redis_client:
+        try:
+            key = f"telehealth:feedback:{req_id}"
+            redis_client.set(key, feedback_type)
+            print(f"LOG: [Feedback] Recorded {feedback_type} for {req_id}")
+            return True
+        except Exception as e:
+            print(f"LOG: [Feedback] Error: {e}")
+    return False
+
+
+def export_history_to_text():
+    patient_id = st.session_state.get("patient_id", "N/A")
+    age = st.session_state.get("age", "N/A")
+    gender = st.session_state.get("gender", "N/A")
+    history = st.session_state.get("diagnosis_history", [])
+
+    report  = "DOCTOR ANYWHERE - SESSION REPORT\n"
+    report += "====================================\n"
+    report += f"Date: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+    report += f"Patient ID: {patient_id}\n"
+    report += f"Profile: {age} years old, {gender}\n"
+    report += "------------------------------------\n\n"
+
+    if not history:
+        report += "No diagnosis recorded this session.\n"
+    else:
+        for i, entry in enumerate(history, 1):
+            report += f"{i}. [{entry['time']}] {entry['disease']}\n"
+            report += f"   Symptoms: {entry['symptoms']}\n"
+            report += f"   Request ID: {entry['req_id']}\n\n"
+
+    report += "\nDisclaimer: This report is for informational purposes only and does not substitute professional medical advice."
+    return report
 
 
 # ─────────────────────────────────────────────
@@ -556,8 +723,8 @@ def reply_greeting():
     greet = "Good morning" if hour < 12 else ("Good afternoon" if hour < 18 else "Good evening")
     return (
         f"{greet}! 👋 I'm DA Assist, your AI-powered symptom checker from **Doctor Anywhere**.\n\n"
-        "Tell me how you're feeling today — describe your symptoms in detail, "
-        "like *fever for 2 days, sore throat, and body aches* — "
+        "Tell me how you're feeling today by describing your symptoms in detail, "
+        "like *fever for 2 days, sore throat, and body aches*, "
         "and I'll provide an initial assessment along with first-aid guidance.\n\n"
         "> 💡 For a certified medical consultation, our doctors are available **24 hours a day** on the Doctor Anywhere app."
     )
@@ -566,16 +733,16 @@ def reply_greeting():
 def reply_help():
     return """Here's how **DA Assist** works:
 
-**🔍 Symptom Check** — Describe your symptoms naturally. The AI pipeline matches them to a clinical knowledge base of 40+ conditions.
+**🔍 Symptom Check** : Describe your symptoms naturally. The AI pipeline matches them to a clinical knowledge base of 40+ conditions.
 
 **📋 After your result:**
 - Ask *"what should I do next?"* for follow-up advice
 - Ask *"show my history"* to review past checks this session
 - Tap **See a Doctor** to book a live consultation
 
-**⚡ Quick chips** — Use the shortcut buttons above the input bar for fast actions.
+**⚡ Quick chips** : Use the shortcut buttons above the input bar for fast actions.
 
-**🔄 Reset** — Type *"clear"* or *"start over"* for a fresh session.
+**🔄 Reset** : Type *"clear"* or *"start over"* for a fresh session.
 
 > ⚠️ DA Assist provides preliminary screening only. Always consult a certified physician for medical decisions."""
 
@@ -594,6 +761,189 @@ def reply_pipeline():
 
 Your symptoms are sent to a Kafka queue, processed by a Spark streaming job, semantically matched using SBERT embeddings, and the result is cached in Redis — all in real time.
 """
+
+
+def reply_prevention(disease):
+    if not disease:
+        return "Please describe your symptoms first so I can provide relevant prevention tips. 🛡️"
+    tips = {
+        "common cold": ["Wash hands frequently", "Avoid touching your face", "Maintain distance from infected individuals"],
+        "dengue":      ["Use mosquito repellent", "Wear long sleeves", "Clear stagnant water around your home"],
+        "malaria":     ["Sleep under a mosquito net", "Use insect repellent", "Take preventive medication if traveling to endemic areas"],
+        "typhoid":     ["Drink boiled or bottled water", "Eat well-cooked food", "Ensure proper hand hygiene"],
+    }
+    disease_key = disease.lower().strip()
+    relevant_tips = next((v for k, v in tips.items() if k in disease_key), ["Maintain a healthy immune system", "Practice good hygiene", "Regular health screenings"])
+    tips_html = "".join(f"<li>✅ {tip}</li>" for tip in relevant_tips)
+    return f"""
+<div class="da-info-card">
+  <div class="da-info-header">🛡️ Prevention Tips: {disease}</div>
+  <div style="padding:16px 20px;">
+    <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;font-size:0.88rem;">
+      {tips_html}
+    </ul>
+  </div>
+</div>"""
+
+
+def reply_diet(disease):
+    if not disease:
+        return "I need to know your condition first to suggest a suitable diet. 🍎"
+    
+    # Base hardcoded diets for common conditions
+    diets = {
+        "diabetes":       ("Low glycemic index foods, leafy greens, whole grains.", "Sugary drinks, white bread, processed snacks."),
+        "hypertension":   ("DASH diet: fruits, vegetables, lean protein, low-fat dairy.", "High sodium foods, canned soups, fast food."),
+        "gastroenteritis":("BRAT diet: Bananas, Rice, Applesauce, Toast.", "Dairy, spicy foods, caffeine, high-fiber raw veggies."),
+        "common cold":    ("Warm soups, vitamin C rich fruits, honey and ginger tea.", "Cold drinks, sugary foods, heavy dairy."),
+        "dengue":         ("Papaya leaf juice, coconut water, protein-rich foods.", "Oily, spicy, and heavy foods."),
+    }
+    
+    disease_key = disease.lower().strip()
+    match_base = next((v for k, v in diets.items() if k in disease_key), (None, None))
+    
+    recommended = []
+    avoid = []
+    
+    if match_base[0]:
+        recommended.append(match_base[0])
+    if match_base[1]:
+        avoid.append(match_base[1])
+        
+    # Dynamically extract from precautions
+    if df_precaution is not None:
+        p_match = df_precaution[df_precaution['Disease_match'] == disease_key]
+        if not p_match.empty:
+            for col in [c for c in df_precaution.columns if 'Precaution' in c]:
+                val = str(p_match.iloc[0][col]).lower()
+                if any(k in val for k in ["eat", "food", "drink", "consume", "vitamin", "water", "fruit", "veg"]):
+                    if "avoid" in val or "stop" in val or "eliminate" in val:
+                        avoid.append(val.capitalize())
+                    else:
+                        recommended.append(val.capitalize())
+
+    # Fallback if nothing found
+    if not recommended:
+        recommended.append("Stay hydrated, eat balanced meals with protein and vitamins.")
+    if not avoid:
+        avoid.append("Processed foods, excessive sugar, and alcohol.")
+
+    rec_html = "".join(f"<div style='margin-bottom:4px;'>• {r}</div>" for r in recommended)
+    avoid_html = "".join(f"<div style='margin-bottom:4px;'>• {a}</div>" for a in avoid)
+
+    return f"""
+<div class="da-info-card">
+  <div class="da-info-header">🍎 Dietary Guidance: {disease}</div>
+  <div style="padding:16px 20px;">
+    <div style="margin-bottom:14px;">
+      <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;color:#00A891;margin-bottom:6px;">✅ Recommended</div>
+      <div style="font-size:0.88rem; line-height:1.4;">{rec_html}</div>
+    </div>
+    <div>
+      <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;color:#FF6B6B;margin-bottom:6px;">❌ Avoid / Limit</div>
+      <div style="font-size:0.88rem; line-height:1.4;">{avoid_html}</div>
+    </div>
+  </div>
+</div>"""
+
+
+def reply_causes(disease):
+    if not disease:
+        return "I need to know your condition first to explain what causes it. 🧬"
+    
+    desc = "No detailed cause information available for this condition."
+    if df_description is not None:
+        match = df_description[df_description['Disease_match'] == disease.lower().strip()]
+        if not match.empty:
+            desc = match.iloc[0]['Description']
+
+    return f"""
+<div class="da-info-card">
+  <div class="da-info-header">🧬 What causes {disease}?</div>
+  <div style="padding:16px 20px;">
+    <div style="font-size:0.88rem; line-height:1.6; color:var(--tx-primary);">
+      {desc}
+    </div>
+    <div style="margin-top:12px; font-size:0.75rem; color:var(--tx-muted); font-style:italic;">
+      Understanding the cause helps in choosing the right treatment path.
+    </div>
+  </div>
+</div>"""
+
+
+def reply_contagious(disease):
+    if not disease:
+        return "Please run a symptom check first so I can check if the condition is contagious. 🦠"
+    
+    d_lower = disease.lower().strip()
+    
+    # Predefined clear cases based on medical common knowledge or data
+    contagious_list = ["common cold", "chicken pox", "impetigo", "hepatitis a", "tuberculosis", "flu", "influenza", "conjunctivitis"]
+    non_contagious_list = ["diabetes", "hypertension", "heart attack", "psoriasis", "gerd", "asthma", "arthritis", "migraine"]
+    
+    status = "Likely Not Contagious"
+    status_color = "#00A891"
+    status_emoji = "✅"
+    
+    if any(c in d_lower for c in contagious_list):
+        status = "Highly Contagious"
+        status_color = "#FF6B6B"
+        status_emoji = "🚨"
+    elif any(n in d_lower for n in non_contagious_list):
+        status = "Not Contagious"
+        status_color = "#00A891"
+        status_emoji = "✅"
+    else:
+        # Check description for keywords
+        if df_description is not None:
+            match = df_description[df_description['Disease_match'] == d_lower]
+            if not match.empty:
+                desc = match.iloc[0]['Description'].lower()
+                if "contagious" in desc or "infectious" in desc or "transmitted" in desc:
+                    status = "Likely Contagious"
+                    status_color = "#FF8C42"
+                    status_emoji = "⚠️"
+
+    return f"""
+<div class="da-info-card">
+  <div class="da-info-header">🦠 Is it contagious?</div>
+  <div style="padding:18px 20px;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+      <span style="font-size:1.5rem;">{status_emoji}</span>
+      <div style="font-size:1.1rem; font-weight:700; color:{status_color};">{status}</div>
+    </div>
+    <div style="font-size:0.85rem; color:var(--tx-primary); line-height:1.5;">
+      Information for <strong>{disease}</strong>: Most conditions are manageable with proper hygiene. 
+      If contagious, avoid close contact with others and sharing personal items until you consult a doctor.
+    </div>
+  </div>
+</div>"""
+
+
+def reply_clinic():
+    clinics = [
+        {"name": "DA Clinic @ Somerset",      "addr": "111 Somerset Rd, #05-10, Singapore 238164", "status": "Open · Closes 9PM"},
+        {"name": "DA Clinic @ Tanjong Pagar", "addr": "72 Anson Rd, #01-02, Singapore 079911",     "status": "Open · Closes 8PM"},
+        {"name": "DA Clinic @ Bishan",         "addr": "501 Bishan Street 11, #01-372, Singapore 570501", "status": "Open · Closes 9PM"},
+    ]
+    rows = "".join(
+        f'<div style="padding:12px 0;border-bottom:1px solid var(--bd-main);">'
+        f'<div style="font-size:0.88rem;font-weight:700;color:var(--tx-primary);">{c["name"]}</div>'
+        f'<div style="font-size:0.78rem;color:var(--tx-secondary);margin-top:2px;">📍 {c["addr"]}</div>'
+        f'<div style="font-size:0.72rem;color:#00A891;font-weight:600;margin-top:4px;">● {c["status"]}</div>'
+        f'</div>'
+        for c in clinics
+    )
+    return f"""
+<div class="da-info-card">
+  <div class="da-info-header">🏥 Nearby Doctor Anywhere Clinics</div>
+  <div style="padding:4px 20px 16px;">
+    {rows}
+    <div style="margin-top:16px;text-align:center;">
+      <a href="https://doctoranywhere.com/clinics/" target="_blank" style="font-size:0.8rem;color:#00C2A8;font-weight:600;text-decoration:none;">View all 40+ locations →</a>
+    </div>
+  </div>
+</div>"""
 
 
 # ── Severity knowledge base ──
@@ -619,11 +969,8 @@ SEVERITY_MAP = {
 
 SEVERITY_CONFIG = {
     "urgent": {
-        "emoji": "🚨",
-        "label": "High Severity",
-        "color": "#FF4444",
-        "bg": "#FFF0F0",
-        "border": "#FFB0B0",
+        "emoji": "🚨", "label": "High Severity", "color": "#FF4444",
+        "bg": "#FFF0F0", "border": "#FFB0B0",
         "alert": "This condition may require **immediate medical attention**.",
         "steps": [
             "🚨 **Do not delay** — contact a doctor or go to the nearest clinic/ER now",
@@ -635,11 +982,8 @@ SEVERITY_CONFIG = {
         "cta": "🩺 See a Doctor Now — Available in &lt;5 min",
     },
     "moderate": {
-        "emoji": "⚠️",
-        "label": "Moderate Severity",
-        "color": "#FF8C00",
-        "bg": "#FFF8F0",
-        "border": "#FFD8A0",
+        "emoji": "⚠️", "label": "Moderate Severity", "color": "#FF8C00",
+        "bg": "#FFF8F0", "border": "#FFD8A0",
         "alert": "This condition should be **monitored carefully** and treated promptly.",
         "steps": [
             "🛌 **Rest well** — avoid strenuous activities for at least 24–48 hours",
@@ -651,11 +995,8 @@ SEVERITY_CONFIG = {
         "cta": "📅 Book a Consultation — Doctor Anywhere",
     },
     "mild": {
-        "emoji": "✅",
-        "label": "Mild Severity",
-        "color": "#00A891",
-        "bg": "#F0FAF8",
-        "border": "#B8EDE6",
+        "emoji": "✅", "label": "Mild Severity", "color": "#00A891",
+        "bg": "#F0FAF8", "border": "#B8EDE6",
         "alert": "This condition is generally **manageable at home** with basic care.",
         "steps": [
             "🛌 **Rest** and avoid overexertion",
@@ -673,7 +1014,7 @@ def get_severity(disease: str) -> str:
     for level, diseases in SEVERITY_MAP.items():
         if any(d in dis or dis in d for dis in diseases):
             return level
-    return "moderate"  # default
+    return "moderate"
 
 
 def reply_followup(last_disease):
@@ -734,7 +1075,10 @@ def reply_danger(last_disease):
             "Symptoms suddenly getting much worse",
         ],
     }
-    flags = "".join(f'<li style="padding:6px 0;border-bottom:1px solid {cfg["border"]};color:var(--tx-primary);">⚠️ &nbsp;{w}</li>' for w in warnings[severity])
+    flags = "".join(
+        f'<li style="padding:6px 0;border-bottom:1px solid {cfg["border"]};color:var(--tx-primary);">⚠️ &nbsp;{w}</li>'
+        for w in warnings[severity]
+    )
     return f"""
 <div style="background:var(--bg-card);border:1.5px solid {cfg['border']};border-radius:18px;overflow:hidden;margin-top:4px;box-shadow:var(--sh-card);">
   <div style="background:{cfg['bg']};padding:14px 20px;border-bottom:1.5px solid {cfg['border']};display:flex;align-items:center;gap:10px;">
@@ -763,15 +1107,14 @@ def reply_doctor():
 def reply_history(history):
     if not history:
         return "No symptom checks recorded this session yet. Describe your symptoms to get started. 🩺"
-    rows = ""
-    for entry in reversed(history):
-        rows += (
-            f'<div class="da-hist-item">'
-            f'<div class="da-hist-disease">🔹 {entry["disease"]}</div>'
-            f'<div class="da-hist-symptoms">{entry["symptoms"][:65]}{"…" if len(entry["symptoms"])>65 else ""}</div>'
-            f'<div class="da-hist-time">🕐 {entry["time"]} · {entry["req_id"]}</div>'
-            f'</div>'
-        )
+    rows = "".join(
+        f'<div class="da-hist-item">'
+        f'<div class="da-hist-disease">🔹 {entry["disease"]}</div>'
+        f'<div class="da-hist-symptoms">{entry["symptoms"][:65]}{"…" if len(entry["symptoms"])>65 else ""}</div>'
+        f'<div class="da-hist-time">🕐 {entry["time"]} · {entry["req_id"]}</div>'
+        f'</div>'
+        for entry in reversed(history)
+    )
     return (
         f'<div class="da-info-card">'
         f'<div class="da-info-header">📋 Session History — {len(history)} check(s)</div>'
@@ -793,26 +1136,20 @@ def reply_clarify(last_disease):
 
 
 def build_result_html(req_id, disease, advice_list, confidence=87):
-    severity = get_severity(disease)
-    severity_class = "urgent" if severity == "urgent" else ""
-    danger_icon = "🚨" if severity == "urgent" else ("⚠️" if severity == "moderate" else "✅")
-    disease_safe = disease.replace("'", "")
     precaution_html = ""
     if advice_list:
-        items = ""
-        for i, item in enumerate(advice_list, 1):
-            items += (
-                f'<div class="da-precaution-item">'
-                f'<div class="da-precaution-bullet">{i}</div>'
-                f'<div class="da-precaution-text">{item}</div>'
-                f'</div>'
-            )
+        items = "".join(
+            f'<div class="da-precaution-item">'
+            f'<div class="da-precaution-bullet">{i}</div>'
+            f'<div class="da-precaution-text">{item}</div>'
+            f'</div>'
+            for i, item in enumerate(advice_list, 1)
+        )
         precaution_html = (
             f'<div class="da-precautions">'
             f'<div class="da-precautions-title">💊 First-Aid & Precautions</div>'
             f'{items}</div>'
         )
-
     return f"""
 <div class="da-result-card">
   <div class="da-result-header">
@@ -840,11 +1177,6 @@ def build_result_html(req_id, disease, advice_list, confidence=87):
     </div>
   </div>
   {precaution_html}
-  <div class="da-feedback">
-    <span class="da-feedback-label">Was this helpful?</span>
-    <span class="da-thumb">👍</span>
-    <span class="da-thumb">👎</span>
-  </div>
   <div class="da-disclaimer">
     ⚠️ DA Assist provides preliminary AI-powered screening only and does not constitute certified medical advice.
     Always consult a licensed Doctor Anywhere physician or healthcare provider for diagnosis and treatment.
@@ -857,34 +1189,24 @@ def build_result_html(req_id, disease, advice_list, confidence=87):
 # ─────────────────────────────────────────────
 def check_services():
     print("LOG: [System] Starting service health checks...")
-    
-    # Check Redis
     try:
         r = redis.Redis(host='localhost', port=6379, db=0, socket_timeout=2)
-        if r.ping():
-            print("LOG: [Redis] ✅ Online (localhost:6379)")
-        else:
-            print("LOG: [Redis] ❌ Connection failed (localhost:6379)")
+        print("LOG: [Redis] ✅ Online" if r.ping() else "LOG: [Redis] ❌ Connection failed")
     except Exception as e:
         print(f"LOG: [Redis] ❌ Error: {e}")
-
-    # Check Kafka
     try:
         import socket
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(2)
         result = sock.connect_ex(('localhost', 9092))
-        if result == 0:
-            print("LOG: [Kafka] ✅ Online (localhost:9092)")
-        else:
-            print(f"LOG: [Kafka] ❌ Offline (localhost:9092) - Error Code: {result}")
+        print("LOG: [Kafka] ✅ Online" if result == 0 else f"LOG: [Kafka] ❌ Offline (code {result})")
         sock.close()
     except Exception as e:
         print(f"LOG: [Kafka] ❌ Error: {e}")
-    
     print("LOG: [System] Health checks completed.\n")
 
 check_services()
+
 
 # ─────────────────────────────────────────────
 #  INFRA INIT
@@ -911,24 +1233,39 @@ def load_precautions():
     except Exception:
         return None
 
+@st.cache_data
+def load_descriptions():
+    try:
+        df = pd.read_csv("data/raw/symptom_Description.csv")
+        df['Disease_match'] = df['Disease'].astype(str).str.lower().str.strip()
+        return df
+    except Exception:
+        return None
+
 producer, redis_client = init_pipeline()
 df_precaution = load_precautions()
+df_description = load_descriptions()
 
-# Session state
+# Session state defaults
 for key, default in [
     ("messages", [{
         "role": "assistant",
         "content": (
             "Hi there! 👋 I'm **DA Assist**, your AI symptom checker powered by Doctor Anywhere.\n\n"
-            "Tell me how you're feeling — describe your symptoms and I'll provide an instant preliminary assessment.\n\n"
+            "Tell me how you're feeling by describing your symptoms and I'll provide an instant preliminary assessment.\n\n"
             "*Try: \"I have a headache, fever, and feel nauseous\" or tap a quick action below.*"
         )
     }]),
-    ("patient_id", f"DA-{uuid.uuid4().hex[:8].upper()}"),
-    ("last_disease", ""),
+    ("patient_id",        f"DA-{uuid.uuid4().hex[:8].upper()}"),
+    ("age",               30),
+    ("gender",            "Other"),
+    ("last_disease",      ""),
     ("diagnosis_history", []),
-    ("query_count", 0),
-    ("dark_mode", False),
+    ("query_count",       0),
+    ("dark_mode",         False),
+    ("feedback_given",    []),
+    ("current_req_id",    ""),
+    ("current_predicted_disease", ""),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -966,16 +1303,21 @@ st.markdown("""
 #  SIDEBAR
 # ─────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("""
+    # FIX 1 applied: use class da-sidebar-header instead of hardcoded color
+    st.markdown(f"""
     <div style="display:flex;align-items:center;gap:10px;padding:12px 0 8px;">
       <div style="width:32px;height:32px;background:linear-gradient(135deg,#00C2A8,#00A891);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;">🩺</div>
-      <div style="font-size:1rem;font-weight:700;color:#1A2E2B;">Doctor Anywhere</div>
+      <div class="da-sidebar-header" style="font-size:1rem;font-weight:700;">Doctor Anywhere</div>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("### Your Session")
+    st.markdown("### Your Profile")
+    st.session_state.age    = st.slider("Age", 0, 100, st.session_state.age)
+    st.session_state.gender = st.selectbox("Gender", ["Male", "Female", "Non-binary", "Other"],
+                                            index=["Male", "Female", "Non-binary", "Other"].index(st.session_state.gender))
     st.markdown(f'<div class="da-patient-chip">🪪 &nbsp;{st.session_state.patient_id}</div>', unsafe_allow_html=True)
 
+    st.markdown("### Session Insights")
     st.markdown(
         f'<div class="da-metric-row">'
         f'<div class="da-metric"><div class="da-metric-num">{st.session_state.query_count}</div><div class="da-metric-label">Queries</div></div>'
@@ -984,29 +1326,44 @@ with st.sidebar:
         unsafe_allow_html=True
     )
 
-    # ── Theme toggle ──
+    st.markdown("---")
+    st.markdown("### Daily Health Tip")
+    st.info(get_daily_health_tip())  # FIX 2: styled to brand teal via CSS above
+
+    st.markdown("---")
     is_dark = st.session_state.get("dark_mode", False)
     toggle_label = "☀️  Light Mode" if is_dark else "🌙  Dark Mode"
     if st.button(toggle_label, use_container_width=True, key="theme_toggle"):
         st.session_state.dark_mode = not is_dark
         st.rerun()
 
+    report_txt = export_history_to_text()
+    st.download_button(
+        label="📥 Download Session Report",
+        data=report_txt,
+        file_name=f"DA_Report_{st.session_state.patient_id}.txt",
+        mime="text/plain",
+        use_container_width=True,
+    )
+
     if st.button("🔄 New Session", use_container_width=True):
-        st.session_state.messages = [{
-            "role": "assistant",
-            "content": "New session started! Describe your symptoms to begin. 💚"
-        }]
-        st.session_state.last_disease = ""
+        st.session_state.messages = [{"role": "assistant", "content": "New session started! Describe your symptoms to begin. 💚"}]
+        st.session_state.last_disease      = ""
+        st.session_state.current_req_id    = ""
+        st.session_state.current_predicted_disease = ""
         st.session_state.diagnosis_history = []
-        st.session_state.query_count = 0
-        st.session_state.patient_id = f"DA-{uuid.uuid4().hex[:8].upper()}"
+        st.session_state.query_count       = 0
+        st.session_state.patient_id        = f"DA-{uuid.uuid4().hex[:8].upper()}"
+        st.session_state.age               = 30
+        st.session_state.gender            = "Other"
+        st.session_state.feedback_given    = []
         st.rerun()
 
     st.markdown("---")
     st.markdown("### System Status")
     for name, ok in [("Kafka Broker", producer is not None), ("Redis Cache", redis_client is not None),
                      ("Spark Driver", producer is not None), ("SBERT Model", producer is not None)]:
-        dot = "da-dot-green" if ok else "da-dot-red"
+        dot     = "da-dot-green" if ok else "da-dot-red"
         val_cls = "da-status-ok" if ok else "da-status-err"
         st.markdown(
             f'<div class="da-status-row"><div class="{dot}"></div>'
@@ -1052,18 +1409,51 @@ for msg in st.session_state.messages:
 # ─────────────────────────────────────────────
 c1, c2, c3, c4 = st.columns(4)
 chips = [
-    (c1, "👨‍⚕️ See Doctor", "how do I see a doctor?"),
-    (c2, "📋 My History", "show my history"),
+    (c1, "👨‍⚕️ See Doctor",  "how do I see a doctor?"),
+    (c2, "📋 My History",    "show my history"),
     (c3, "⚙️ How it works", "how does this work?"),
-    (c4, "❓ Help", "help"),
+    (c4, "❓ Help",          "help"),
 ]
 for col, label, action in chips:
     with col:
-        if st.button(label, use_container_width=True, key=f"chip_{label}"):
-            st.session_state._chip = action
-            st.rerun()
+        st.button(label, use_container_width=True, key=f"chip_{label}", on_click=set_chip, args=(action,))
 
 chip_trigger = st.session_state.pop("_chip", None)
+
+
+# ─────────────────────────────────────────────
+#  UI HELPERS
+# ─────────────────────────────────────────────
+def render_followup_and_feedback(req_id, predicted_disease):
+    if not req_id:
+        return
+        
+    st.markdown(
+        '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;padding:4px 0 2px;">'
+        '<span style="width:100%;font-size:0.68rem;font-weight:700;text-transform:uppercase;'
+        'letter-spacing:0.1em;color:var(--tx-muted);margin-bottom:2px;">💬 Quick follow-up</span>'
+        '</div>',
+        unsafe_allow_html=True
+    )
+    fc1, fc2, fc3, fc4 = st.columns(4)
+    with fc1:
+        st.button("🧬 What causes it?", key=f"fu_cause_{req_id}", use_container_width=True, on_click=set_chip, args=(f"What causes {predicted_disease}?",))
+    with fc2:
+        st.button("🦠 Is it contagious?", key=f"fu_cont_{req_id}", use_container_width=True, on_click=set_chip, args=(f"Is {predicted_disease} contagious?",))
+    with fc3:
+        st.button("🍎 What to eat?", key=f"fu_diet_{req_id}", use_container_width=True, on_click=set_chip, args=(f"What should I eat if I have {predicted_disease}?",))
+    with fc4:
+        st.button("🩺 Next steps", key=f"fu_next_{req_id}", use_container_width=True, on_click=set_chip, args=("What should I do next?",))
+
+    if req_id not in st.session_state.feedback_given:
+        st.markdown("---")
+        f_label, f_up, f_down = st.columns([2, 1, 1])
+        with f_label:
+            st.markdown('<span style="font-size:0.85rem;font-weight:600;color:var(--tx-secondary);">Was this assessment helpful?</span>', unsafe_allow_html=True)
+        with f_up:
+            st.button("👍 Yes", key=f"up_{req_id}", use_container_width=True, on_click=handle_feedback_callback, args=(req_id, "positive"))
+        with f_down:
+            st.button("👎 No", key=f"down_{req_id}", use_container_width=True, on_click=handle_feedback_callback, args=(req_id, "negative"))
 
 
 # ─────────────────────────────────────────────
@@ -1078,22 +1468,29 @@ def handle_input(user_input: str):
     intent = detect_intent(user_input)
 
     dispatch = {
-        "gratitude": lambda: reply_gratitude(st.session_state.last_disease),
-        "greeting":  lambda: reply_greeting(),
-        "help":      lambda: reply_help(),
-        "pipeline":  lambda: reply_pipeline(),
-        "history":   lambda: reply_history(st.session_state.diagnosis_history),
-        "followup":  lambda: reply_followup(st.session_state.last_disease),
-        "doctor":    lambda: reply_doctor(),
-        "danger":    lambda: reply_danger(st.session_state.last_disease),
-        "clarify":   lambda: reply_clarify(st.session_state.last_disease),
+        "gratitude":  lambda: reply_gratitude(st.session_state.last_disease),
+        "greeting":   lambda: reply_greeting(),
+        "help":       lambda: reply_help(),
+        "pipeline":   lambda: reply_pipeline(),
+        "history":    lambda: reply_history(st.session_state.diagnosis_history),
+        "followup":   lambda: reply_followup(st.session_state.last_disease),
+        "doctor":     lambda: reply_doctor(),
+        "danger":     lambda: reply_danger(st.session_state.last_disease),
+        "clarify":    lambda: reply_clarify(st.session_state.last_disease),
+        "prevention": lambda: reply_prevention(st.session_state.last_disease),
+        "causes":     lambda: reply_causes(st.session_state.last_disease),
+        "contagious": lambda: reply_contagious(st.session_state.last_disease),
+        "diet":       lambda: reply_diet(st.session_state.last_disease),
+        "clinic":     lambda: reply_clinic(),
     }
 
     if intent == "reset":
-        st.session_state.messages = []
-        st.session_state.last_disease = ""
+        st.session_state.messages          = []
+        st.session_state.last_disease      = ""
+        st.session_state.current_req_id    = ""
+        st.session_state.current_predicted_disease = ""
         st.session_state.diagnosis_history = []
-        st.session_state.query_count = 0
+        st.session_state.query_count       = 0
         with st.chat_message("assistant"):
             st.markdown("Session cleared! Describe your symptoms anytime to start a new check. 💚")
         st.session_state.messages.append({"role": "assistant", "content": "Session cleared! Describe your symptoms anytime. 💚"})
@@ -1109,34 +1506,42 @@ def handle_input(user_input: str):
     # ── Symptom → pipeline ──
     if not producer or not redis_client:
         with st.chat_message("assistant"):
-            st.warning("⚠️ Backend services are offline. Please check that Docker containers are running.")
+            # FIX 3: replace st.warning with branded HTML box
+            st.markdown("""
+<div style="background:#FFF8EE;border:1.5px solid #FFD8A0;border-radius:12px;padding:14px 18px;
+            display:flex;align-items:center;gap:12px;">
+  <span style="font-size:1.3rem;">⚠️</span>
+  <div style="font-size:0.88rem;color:#8A5500;font-weight:500;">
+    Backend services are offline. Please check that Docker containers are running.
+  </div>
+</div>""", unsafe_allow_html=True)
         return
 
     req_id = f"REQ-{uuid.uuid4().hex[:6].upper()}"
-    print(f"LOG: [Pipeline] 📨 Sending request {req_id} to Kafka for patient {st.session_state.patient_id}")
+    print(f"LOG: [Pipeline] 📨 Sending {req_id} to Kafka for {st.session_state.patient_id}")
     producer.send('telehealth-symptoms', value={
-        "request_id": req_id,
-        "patient_id": st.session_state.patient_id,
+        "request_id":        req_id,
+        "patient_id":        st.session_state.patient_id,
         "user_input_symptoms": user_input
     })
     producer.flush()
 
     with st.chat_message("assistant"):
         with st.spinner("Analyzing symptoms…"):
-            redis_key = f"telehealth:result:{st.session_state.patient_id}"
+            redis_key    = f"telehealth:result:{st.session_state.patient_id}"
             redis_client.delete(redis_key)
-            result_found = False
-            predicted_disease = ""
-            advice_list = []
+            result_found     = False
+            predicted_disease= ""
+            advice_list      = []
 
-            print(f"LOG: [Pipeline] 🔍 Polling Redis for result ({redis_key})...")
+            print(f"LOG: [Pipeline] 🔍 Polling Redis ({redis_key})...")
             for i in range(200):
                 time.sleep(0.15)
                 cached = redis_client.get(redis_key)
                 if cached:
                     parsed = json.loads(cached.decode('utf-8'))
                     if parsed.get("request_id") == req_id:
-                        print(f"LOG: [Pipeline] ✅ Result received for {req_id} after {i+1} attempts.")
+                        print(f"LOG: [Pipeline] ✅ Result for {req_id} after {i+1} attempts.")
                         predicted_disease = parsed["predicted_disease"]
                         if df_precaution is not None:
                             match = df_precaution[df_precaution['Disease_match'] == predicted_disease.lower().strip()]
@@ -1147,52 +1552,27 @@ def handle_input(user_input: str):
                                         advice_list.append(str(val).capitalize())
                         result_found = True
                         break
-            
+
             if not result_found:
-                print(f"LOG: [Pipeline] ❌ Timeout: No result found for {req_id} after 35 attempts.")
+                print(f"LOG: [Pipeline] ❌ Timeout for {req_id}.")
 
         ph = st.empty()
         if result_found:
             confidence_score = parsed.get("confidence", 87)
             html = build_result_html(req_id, predicted_disease, advice_list, confidence_score)
-
             ph.markdown(html, unsafe_allow_html=True)
             st.session_state.messages.append({"role": "assistant", "content": html})
             st.session_state.last_disease = predicted_disease
+            st.session_state.current_req_id = req_id
+            st.session_state.current_predicted_disease = predicted_disease
             st.session_state.diagnosis_history.append({
-                "disease": predicted_disease,
+                "disease":  predicted_disease,
                 "symptoms": user_input,
-                "time": datetime.datetime.now().strftime("%H:%M"),
-                "req_id": req_id,
+                "time":     datetime.datetime.now().strftime("%H:%M"),
+                "req_id":   req_id,
             })
 
-            # ── Quick-reply buttons (real st.buttons) ──
-            severity = get_severity(predicted_disease)
-            danger_icon = "🚨" if severity == "urgent" else ("⚠️" if severity == "moderate" else "✅")
-            st.markdown(
-                '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;padding:4px 0 2px;">'
-                '<span style="width:100%;font-size:0.68rem;font-weight:700;text-transform:uppercase;'
-                'letter-spacing:0.1em;color:var(--tx-muted);margin-bottom:2px;">💬 Quick follow-up</span>'
-                '</div>',
-                unsafe_allow_html=True
-            )
-            fc1, fc2, fc3, fc4 = st.columns(4)
-            with fc1:
-                if st.button("🩺 Next steps", key=f"fu_next_{req_id}", use_container_width=True):
-                    st.session_state._chip = "What should I do next?"
-                    st.rerun()
-            with fc2:
-                if st.button(f"{danger_icon} Dangerous?", key=f"fu_danger_{req_id}", use_container_width=True):
-                    st.session_state._chip = "Is this dangerous?"
-                    st.rerun()
-            with fc3:
-                if st.button("👨‍⚕️ See doctor?", key=f"fu_doc_{req_id}", use_container_width=True):
-                    st.session_state._chip = "Should I see a doctor?"
-                    st.rerun()
-            with fc4:
-                if st.button("📖 Tell me more", key=f"fu_more_{req_id}", use_container_width=True):
-                    st.session_state._chip = f"Tell me more about {predicted_disease}"
-                    st.rerun()
+            render_followup_and_feedback(req_id, predicted_disease)
         else:
             err = """
 <div class="da-result-card">
@@ -1216,3 +1596,12 @@ if chip_trigger:
     st.rerun()
 elif user_input:
     handle_input(user_input)
+    st.rerun()
+
+# ── Persist Follow-up UI ──
+# If we have a current result, show the follow-up/feedback buttons at the bottom
+if st.session_state.current_req_id:
+    render_followup_and_feedback(
+        st.session_state.current_req_id, 
+        st.session_state.current_predicted_disease
+    )
