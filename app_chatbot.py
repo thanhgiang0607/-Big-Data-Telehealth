@@ -230,6 +230,7 @@ html, body, [class*="css"] {{ font-family: 'Plus Jakarta Sans', sans-serif; }}
 [data-testid="stChatMessage"] .stMarkdown strong,
 [data-testid="stChatMessage"] .stMarkdown em,
 [data-testid="stChatMessage"] .stMarkdown blockquote,
+[data-testid="stChatMessage"] .stMarkdown div,
 [data-testid="stChatMessage"] .stMarkdown code {{ color:var(--tx-primary)!important; }}
 
 /* ── Result card ── */
@@ -625,16 +626,16 @@ def detect_intent(text: str) -> str:
         "reset":     r"^(clear|reset|start over|bắt đầu lại|xóa|new session|restart)$",
         "history":   r"\b(history|lịch sử|past|previous|before|earlier|my diagnos)\b",
         "pipeline":  r"\b(pipeline|kafka|spark|redis|sbert|how (it works|does this work)|architecture|technology|tech)\b",
-        "help":      r"\b(help|hướng dẫn|how (do|can)|what (can|should)|guide|usage|instruction)\b",
+        "diet":       r"\b(eat|food|diet|nutrition|meal|ăn gì|kiêng gì|dinh dưỡng)\b",
         "followup":  r"\b(what (should|do) i (do|take)|next step|treatment|medicine|when to|should i|what do i do)\b",
         "danger":    r"\b(dangerous|serious|emergency|risk|nguy hiểm|nghiêm trọng|is it bad|warning sign|red flag|when.*hospital|should i go)\b",
-        "clarify":   r"\b(what (is|does|are)|explain|tell me|elaborate|clarify|mean|tại sao|là gì)\b",
         "doctor":    r"\b(see a doctor|book|appointment|consult|GP|specialist|clinic|doctor now)\b",
         "prevention": r"\b(prevent|avoid|protection|hạn chế|phòng ngừa|phòng tránh)\b",
         "causes":     r"\b(cause|why|how did i get|reason|tại sao|nguyên nhân)\b",
         "contagious": r"\b(contagious|catch|pass on|spread|infectious|lây|truyền nhiễm)\b",
-        "diet":       r"\b(eat|food|diet|nutrition|meal|ăn gì|kiêng gì|dinh dưỡng)\b",
         "clinic":     r"\b(nearest|location|address|where is the clinic|hospital|phòng khám|ở đâu)\b",
+        "help":      r"\b(help|hướng dẫn|guide|usage|instruction)\b",
+        "clarify":   r"\b(explain|tell me|elaborate|clarify|mean|tại sao|là gì)\b",
     }
     for intent, pattern in patterns.items():
         if re.search(pattern, t):
@@ -797,30 +798,33 @@ def reply_diet(disease):
         "gastroenteritis":("BRAT diet: Bananas, Rice, Applesauce, Toast.", "Dairy, spicy foods, caffeine, high-fiber raw veggies."),
         "common cold":    ("Warm soups, vitamin C rich fruits, honey and ginger tea.", "Cold drinks, sugary foods, heavy dairy."),
         "dengue":         ("Papaya leaf juice, coconut water, protein-rich foods.", "Oily, spicy, and heavy foods."),
+        "allergy":        ("Antioxidant-rich foods like berries, fatty fish, and plenty of water.", "Known allergens, highly processed foods, and alcohol."),
+        "paralysis":      ("Heart-healthy diet: high fiber, low saturated fat, plenty of fruits and vegetables.", "High sodium foods, processed meats, excessive alcohol."),
     }
     
-    disease_key = disease.lower().strip()
-    match_base = next((v for k, v in diets.items() if k in disease_key), (None, None))
+    d_lower = disease.lower().strip()
+    match_base = next((v for k, v in diets.items() if k in d_lower or d_lower in k), (None, None))
     
     recommended = []
     avoid = []
     
-    if match_base[0]:
-        recommended.append(match_base[0])
-    if match_base[1]:
-        avoid.append(match_base[1])
+    if match_base[0]: recommended.append(match_base[0])
+    if match_base[1]: avoid.append(match_base[1])
         
     # Dynamically extract from precautions
     if df_precaution is not None:
-        p_match = df_precaution[df_precaution['Disease_match'] == disease_key]
+        p_match = df_precaution[df_precaution['Disease_match'] == d_lower]
+        if p_match.empty:
+            p_match = df_precaution[df_precaution['Disease_match'].str.contains(d_lower, na=False)]
+
         if not p_match.empty:
             for col in [c for c in df_precaution.columns if 'Precaution' in c]:
                 val = str(p_match.iloc[0][col]).lower()
-                if any(k in val for k in ["eat", "food", "drink", "consume", "vitamin", "water", "fruit", "veg"]):
-                    if "avoid" in val or "stop" in val or "eliminate" in val:
-                        avoid.append(val.capitalize())
+                if any(k in val for k in ["eat", "food", "drink", "consume", "vitamin", "water", "fruit", "veg", "diet"]):
+                    if any(k in val for k in ["avoid", "stop", "eliminate", "no ", "limit"]):
+                        if val.capitalize() not in avoid: avoid.append(val.capitalize())
                     else:
-                        recommended.append(val.capitalize())
+                        if val.capitalize() not in recommended: recommended.append(val.capitalize())
 
     # Fallback if nothing found
     if not recommended:
@@ -831,10 +835,26 @@ def reply_diet(disease):
     rec_html = "".join(f"<div style='margin-bottom:4px;'>• {r}</div>" for r in recommended)
     avoid_html = "".join(f"<div style='margin-bottom:4px;'>• {a}</div>" for a in avoid)
 
+    # Severity warning for urgent conditions
+    severity_warning = ""
+    if get_severity(disease) == "urgent":
+        # Use semi-transparent urgent color or theme-aware colors for backgrounds
+        severity_warning = f"""
+<div style="background:rgba(255, 107, 107, 0.12); border:1.5px solid #FF6B6B; border-radius:12px; padding:14px; margin-bottom:16px; font-size:0.85rem; color:#FF6B6B;">
+  <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+    <span style="font-size:1.2rem;">🚨</span>
+    <strong style="color:#FF6B6B;">Urgent Priority Assessment</strong>
+  </div>
+  <div style="line-height:1.5;">
+    For conditions like <strong style="color:var(--tx-primary);">{disease}</strong>, immediate medical intervention is critical. Dietary changes are secondary to professional care.
+  </div>
+</div>"""
+
     return f"""
 <div class="da-info-card">
   <div class="da-info-header">🍎 Dietary Guidance: {disease}</div>
   <div style="padding:16px 20px;">
+    {severity_warning}
     <div style="margin-bottom:14px;">
       <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;color:#00A891;margin-bottom:6px;">✅ Recommended</div>
       <div style="font-size:0.88rem; line-height:1.4;">{rec_html}</div>
@@ -946,27 +966,6 @@ def reply_clinic():
 </div>"""
 
 
-# ── Severity knowledge base ──
-SEVERITY_MAP = {
-    "urgent": [
-        "heart attack", "stroke", "pneumonia", "tuberculosis", "malaria",
-        "dengue", "typhoid", "hepatitis", "jaundice", "aids", "chronic cholestasis",
-        "paralysis (brain hemorrhage)", "brain hemorrhage", "alcoholic hepatitis",
-        "hypoglycemia", "hyperthyroidism", "hypothyroidism", "diabetes",
-    ],
-    "moderate": [
-        "bronchial asthma", "urinary tract infection", "gastroenteritis",
-        "peptic ulcer disease", "migraine", "cervical spondylosis",
-        "varicose veins", "hypertension", "arthritis", "psoriasis",
-        "fungal infection", "chicken pox", "dengue", "dimorphic hemmorhoids(piles)",
-        "drug reaction", "allergy",
-    ],
-    "mild": [
-        "common cold", "acne", "back pain", "impetigo",
-        "chronic fatigue syndrome", "vertigo", "gerd",
-    ],
-}
-
 SEVERITY_CONFIG = {
     "urgent": {
         "emoji": "🚨", "label": "High Severity", "color": "#FF4444",
@@ -1011,9 +1010,28 @@ SEVERITY_CONFIG = {
 
 def get_severity(disease: str) -> str:
     d = disease.lower().strip()
-    for level, diseases in SEVERITY_MAP.items():
-        if any(d in dis or dis in d for dis in diseases):
-            return level
+    
+    # Critical fallback first - some conditions are ALWAYS urgent regardless of individual symptom weights
+    urgent_keywords = ["heart attack", "stroke", "brain hemorrhage", "paralysis", "tuberculosis", "aids", "dengue"]
+    if any(u in d for u in urgent_keywords):
+        return "urgent"
+
+    score = disease_severity_scores.get(d, 0)
+    
+    # Fallback search if exact match fails
+    if score == 0:
+        for ds, sc in disease_severity_scores.items():
+            if d in ds or ds in d:
+                score = sc
+                break
+                
+    if score >= 6:
+        return "urgent"
+    elif score >= 4:
+        return "moderate"
+    elif score > 0:
+        return "mild"
+    
     return "moderate"
 
 
@@ -1025,7 +1043,25 @@ def reply_followup(last_disease):
         )
     severity = get_severity(last_disease)
     cfg = SEVERITY_CONFIG[severity]
-    steps_html = "".join(f"<li>{s}</li>" for s in cfg["steps"])
+    
+    # Get specific precautions from CSV
+    specific_precautions = []
+    if df_precaution is not None:
+        d_lower = last_disease.lower().strip()
+        match = df_precaution[df_precaution['Disease_match'] == d_lower]
+        if match.empty:
+            match = df_precaution[df_precaution['Disease_match'].str.contains(d_lower, na=False)]
+            
+        if not match.empty:
+            for col in [c for c in df_precaution.columns if 'Precaution' in c]:
+                val = match.iloc[0][col]
+                if pd.notnull(val) and str(val).strip() not in ["none", ""]:
+                    specific_precautions.append(f"✅ **{str(val).capitalize()}**")
+
+    # Merge general steps with specific ones
+    all_steps = specific_precautions + cfg["steps"]
+    steps_html = "".join(f"<li>{s}</li>" for s in all_steps)
+    
     return f"""
 <div style="background:var(--bg-card);border:1.5px solid var(--bd-card);border-radius:18px;overflow:hidden;margin-top:4px;box-shadow:var(--sh-card);">
   <div style="background:{cfg['bg']};border-bottom:1.5px solid {cfg['border']};padding:14px 20px;display:flex;align-items:center;gap:10px;">
@@ -1226,12 +1262,14 @@ def init_pipeline():
 
 @st.cache_data
 def load_precautions():
-    try:
-        df = pd.read_csv("data/cleaned/cleaned_precaution.csv")
-        df['Disease_match'] = df['Disease'].astype(str).str.lower().str.strip()
-        return df
-    except Exception:
-        return None
+    for path in ["data/cleaned/cleaned_precaution.csv", "data/raw/symptom_precaution.csv"]:
+        try:
+            df = pd.read_csv(path)
+            df['Disease_match'] = df['Disease'].astype(str).str.lower().str.strip()
+            return df
+        except Exception:
+            continue
+    return None
 
 @st.cache_data
 def load_descriptions():
@@ -1242,9 +1280,32 @@ def load_descriptions():
     except Exception:
         return None
 
+# ── Severity knowledge base ──
+@st.cache_data
+def load_disease_severity():
+    try:
+        df_severity = pd.read_csv("data/raw/Symptom-severity.csv")
+        severity_map = dict(zip(df_severity['Symptom'].str.strip(), df_severity['weight']))
+        df_dataset = pd.read_csv("data/raw/dataset.csv")
+        disease_severity = {}
+        for disease, group in df_dataset.groupby('Disease'):
+            max_weight = 0
+            for col in group.columns[1:]:
+                symptoms = group[col].dropna().astype(str).str.strip().unique()
+                for s in symptoms:
+                    weight = severity_map.get(s, 0)
+                    if weight > max_weight: max_weight = weight
+            d_name = str(disease).strip().lower()
+            disease_severity[d_name] = max_weight
+        return disease_severity
+    except Exception as e:
+        print(f"LOG: [System] Error loading disease severity: {e}")
+        return {}
+
 producer, redis_client = init_pipeline()
 df_precaution = load_precautions()
 df_description = load_descriptions()
+disease_severity_scores = load_disease_severity()
 
 # Session state defaults
 for key, default in [
