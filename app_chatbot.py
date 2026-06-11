@@ -449,7 +449,19 @@ div[data-baseweb="notification"][kind="warning"] * {{
 .da-chip-btn:hover {{ background: var(--toggle-bg); border-color: #00C2A8; color: #00A891; }}
 .da-chip-btn.urgent {{ border-color: #FFB0B0; color: #CC3333; background: #FFF5F5; }}
 .da-chip-btn.urgent:hover {{ background:#FFE8E8; border-color:#FF8888; }}
+
+/* ── Message Timestamps ── */
+.da-msg-time {{
+  font-size: 0.65rem;
+  margin-top: 4px;
+  opacity: 0.6;
+  text-align: right;
+  font-weight: 400;
+}}
+[data-role="user"] .da-msg-time {{ color: rgba(255,255,255,0.8); }}
+[data-role="assistant"] .da-msg-time {{ color: var(--tx-muted); }}
 </style>
+
 """, unsafe_allow_html=True)
 
 # ── Inject theme CSS — resolves light/dark for Python-aware values ──
@@ -521,6 +533,31 @@ st.markdown(f"""
 
   /* ── FIX 1: Sidebar header — was hardcoded #1A2E2B, now theme-aware ── */
   .da-sidebar-header {{ color: {_sidebar_head} !important; }}
+
+  /* ── Expander (Sidebar) ── */
+  [data-testid="stSidebar"] [data-testid="stExpander"] {{
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--bd-main) !important;
+    border-radius: 12px !important;
+  }}
+  [data-testid="stSidebar"] [data-testid="stExpander"] details {{
+    border: none !important;
+  }}
+  [data-testid="stSidebar"] [data-testid="stExpander"] summary p {{
+    color: var(--tx-primary) !important;
+  }}
+
+  /* ── Number Input (Sidebar) ── */
+  [data-testid="stSidebar"] [data-testid="stNumberInput"] input {{
+    background-color: var(--bg-input) !important;
+    color: var(--tx-primary) !important;
+    border-color: var(--bd-input) !important;
+  }}
+  [data-testid="stSidebar"] [data-testid="stNumberInput"] button {{
+    background-color: var(--bg-chip) !important;
+    color: #00A891 !important;
+    border-color: var(--bd-chip) !important;
+  }}
 
   /* ── Selectbox / Dropdown (BaseUI) ── */
   [data-testid="stSidebar"] [data-baseweb="select"] > div:first-child {{
@@ -621,6 +658,7 @@ st.markdown(f"""
 def detect_intent(text: str) -> str:
     t = text.lower().strip()
     patterns = {
+        "emergency":  r"\b(emergency|ambulance|995|heart attack|stroke|choking|unconscious|heavy bleeding|cấp cứu)\b",
         "gratitude": r"\b(thank|thanks|cảm ơn|camon|thnx|ty\b|thx|appreciate|great|helpful|perfect)\b",
         "greeting":  r"^(hi|hello|hey|xin chào|chào|good morning|good afternoon|good evening)\b",
         "reset":     r"^(clear|reset|start over|bắt đầu lại|xóa|new session|restart)$",
@@ -646,6 +684,27 @@ def detect_intent(text: str) -> str:
 # ─────────────────────────────────────────────
 #  HELPERS & UTILS
 # ─────────────────────────────────────────────
+def calculate_wellness_score():
+    score = 80 # Base score
+    # Age factor
+    if st.session_state.age > 60 or st.session_state.age < 10:
+        score -= 5
+    
+    # Vitals factor
+    temp = st.session_state.get("vitals_temp", 36.5)
+    if temp > 37.5 or temp < 35.5:
+        score -= 15
+    
+    hr = st.session_state.get("vitals_hr", 75)
+    if hr > 100 or hr < 60:
+        score -= 10
+        
+    # Query history factor
+    if len(st.session_state.diagnosis_history) > 2:
+        score -= 10
+        
+    return max(min(score, 100), 0)
+
 def set_chip(action):
     st.session_state._chip = action
 
@@ -709,6 +768,24 @@ def export_history_to_text():
 # ─────────────────────────────────────────────
 #  RESPONSE BUILDERS
 # ─────────────────────────────────────────────
+def reply_emergency():
+    return f"""
+<div style="background:#FFE8E8; border:2px solid #FF4444; border-radius:18px; padding:24px; text-align:center;">
+  <div style="font-size:3rem; margin-bottom:12px;">🚨</div>
+  <h2 style="color:#CC0000; margin:0 0 10px; font-weight:800;">EMERGENCY DETECTED</h2>
+  <p style="font-size:1rem; color:#660000; margin-bottom:20px; line-height:1.5;">
+    If you are experiencing a life-threatening emergency, please <strong>STOP</strong> using this chat and call emergency services immediately.
+  </p>
+  <div style="display:flex; flex-direction:column; gap:12px;">
+    <a href="tel:995" style="background:#FF4444; color:white; border-radius:12px; padding:14px; font-size:1.1rem; font-weight:700; text-decoration:none;">📞 Call 995 (Singapore)</a>
+    <a href="https://doctoranywhere.com/da-virtual-clinic/" target="_blank" style="background:white; border:1.5px solid #FF4444; color:#FF4444; border-radius:12px; padding:12px; font-size:0.9rem; font-weight:600; text-decoration:none;">See a Doctor Now (Virtual)</a>
+  </div>
+  <p style="font-size:0.75rem; color:#990000; margin-top:20px;">
+    Emergency signs include: Chest pain, difficulty breathing, sudden weakness, severe bleeding, or loss of consciousness.
+  </p>
+</div>"""
+
+
 def reply_gratitude(last_disease):
     if last_disease:
         return (
@@ -1282,6 +1359,7 @@ disease_severity_scores = load_disease_severity()
 for key, default in [
     ("messages", [{
         "role": "assistant",
+        "time": datetime.datetime.now().strftime("%H:%M"),
         "content": (
             "Hi there! 👋 I'm **DA Assist**, your AI symptom checker powered by Doctor Anywhere.\n\n"
             "Tell me how you're feeling by describing your symptoms and I'll provide an instant preliminary assessment.\n\n"
@@ -1298,6 +1376,10 @@ for key, default in [
     ("feedback_given",    []),
     ("current_req_id",    ""),
     ("current_predicted_disease", ""),
+    ("vitals_temp",      36.5),
+    ("vitals_hr",        75),
+    ("vitals_bp_sys",    120),
+    ("vitals_bp_dia",    80),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -1349,6 +1431,24 @@ with st.sidebar:
                                             index=["Male", "Female", "Non-binary", "Other"].index(st.session_state.gender))
     st.markdown(f'<div class="da-patient-chip">🪪 &nbsp;{st.session_state.patient_id}</div>', unsafe_allow_html=True)
 
+    st.markdown("### Health Vitals")
+    with st.expander("Update Current Vitals", expanded=False):
+        st.session_state.vitals_temp = st.number_input("Temp (°C)", 34.0, 42.0, st.session_state.vitals_temp, step=0.1)
+        st.session_state.vitals_hr   = st.number_input("Heart Rate (bpm)", 40, 200, st.session_state.vitals_hr)
+        c_sys, c_dia = st.columns(2)
+        st.session_state.vitals_bp_sys = c_sys.number_input("Sys BP", 70, 220, st.session_state.vitals_bp_sys)
+        st.session_state.vitals_bp_dia = c_dia.number_input("Dia BP", 40, 140, st.session_state.vitals_bp_dia)
+
+    wellness_score = calculate_wellness_score()
+    score_color = "#00C2A8" if wellness_score > 70 else ("#FF8C42" if wellness_score > 40 else "#FF6B6B")
+    st.markdown(f"""
+    <div style="background:var(--bg-card); border:1.5px solid var(--bd-main); border-radius:12px; padding:12px; margin-top:10px; text-align:center;">
+      <div style="font-size:0.68rem; font-weight:700; color:var(--tx-muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:4px;">Wellness Score</div>
+      <div style="font-size:1.8rem; font-weight:800; color:{score_color};">{wellness_score}%</div>
+      <div style="font-size:0.7rem; color:var(--tx-secondary); margin-top:2px;">Based on profile & vitals</div>
+    </div>
+    """, unsafe_allow_html=True)
+
     st.markdown("### Session Insights")
     st.markdown(
         f'<div class="da-metric-row">'
@@ -1357,6 +1457,14 @@ with st.sidebar:
         f'</div>',
         unsafe_allow_html=True
     )
+
+    st.markdown("---")
+    st.markdown("### Smart Suggestions")
+    suggestions = ["Fever & Headache", "Sore throat", "Stomach pain", "Body aches", "Cough & Cold"]
+    for sugg in suggestions:
+        if st.button(f"🔍 {sugg}", use_container_width=True, key=f"sugg_{sugg}"):
+            st.session_state._chip = sugg
+            st.rerun()
 
     st.markdown("---")
     st.markdown("### Daily Health Tip")
@@ -1379,7 +1487,8 @@ with st.sidebar:
     )
 
     if st.button("🔄 New Session", use_container_width=True):
-        st.session_state.messages = [{"role": "assistant", "content": "New session started! Describe your symptoms to begin. 💚"}]
+        t_start = datetime.datetime.now().strftime("%H:%M")
+        st.session_state.messages = [{"role": "assistant", "content": "New session started! Describe your symptoms to begin. 💚", "time": t_start}]
         st.session_state.last_disease      = ""
         st.session_state.current_req_id    = ""
         st.session_state.current_predicted_disease = ""
@@ -1434,6 +1543,8 @@ with st.sidebar:
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"], unsafe_allow_html=True)
+        if "time" in msg:
+            st.markdown(f'<div class="da-msg-time" data-role="{msg["role"]}">{msg["time"]}</div>', unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────
@@ -1493,13 +1604,18 @@ def render_followup_and_feedback(req_id, predicted_disease):
 # ─────────────────────────────────────────────
 def handle_input(user_input: str):
     st.session_state.query_count += 1
+    t_now = datetime.datetime.now().strftime("%H:%M")
+    
     with st.chat_message("user"):
         st.markdown(user_input)
-    st.session_state.messages.append({"role": "user", "content": user_input})
+        st.markdown(f'<div class="da-msg-time" data-role="user">{t_now}</div>', unsafe_allow_html=True)
+    
+    st.session_state.messages.append({"role": "user", "content": user_input, "time": t_now})
 
     intent = detect_intent(user_input)
 
     dispatch = {
+        "emergency":  lambda: reply_emergency(),
         "gratitude":  lambda: reply_gratitude(st.session_state.last_disease),
         "greeting":   lambda: reply_greeting(),
         "help":       lambda: reply_help(),
@@ -1523,33 +1639,41 @@ def handle_input(user_input: str):
         st.session_state.current_predicted_disease = ""
         st.session_state.diagnosis_history = []
         st.session_state.query_count       = 0
+        t_reset = datetime.datetime.now().strftime("%H:%M")
         with st.chat_message("assistant"):
             st.markdown("Session cleared! Describe your symptoms anytime to start a new check. 💚")
-        st.session_state.messages.append({"role": "assistant", "content": "Session cleared! Describe your symptoms anytime. 💚"})
+            st.markdown(f'<div class="da-msg-time" data-role="assistant">{t_reset}</div>', unsafe_allow_html=True)
+        st.session_state.messages.append({"role": "assistant", "content": "Session cleared! Describe your symptoms anytime. 💚", "time": t_reset})
         return
 
     if intent in dispatch:
         reply = dispatch[intent]()
+        t_assistant = datetime.datetime.now().strftime("%H:%M")
         with st.chat_message("assistant"):
             if "<div" in str(reply) or "<style" in str(reply):
                 st.markdown(reply, unsafe_allow_html=True)
             else:
                 st.markdown(reply)
-        st.session_state.messages.append({"role": "assistant", "content": reply})
+            st.markdown(f'<div class="da-msg-time" data-role="assistant">{t_assistant}</div>', unsafe_allow_html=True)
+        st.session_state.messages.append({"role": "assistant", "content": reply, "time": t_assistant})
         return
 
     # ── Symptom → pipeline ──
     if not producer or not redis_client:
+        t_offline = datetime.datetime.now().strftime("%H:%M")
         with st.chat_message("assistant"):
             # FIX 3: replace st.warning with branded HTML box
-            st.markdown("""
+            offline_msg = """
 <div style="background:#FFF8EE;border:1.5px solid #FFD8A0;border-radius:12px;padding:14px 18px;
             display:flex;align-items:center;gap:12px;">
   <span style="font-size:1.3rem;">⚠️</span>
   <div style="font-size:0.88rem;color:#8A5500;font-weight:500;">
     Backend services are offline. Please check that Docker containers are running.
   </div>
-</div>""", unsafe_allow_html=True)
+</div>"""
+            st.markdown(offline_msg, unsafe_allow_html=True)
+            st.markdown(f'<div class="da-msg-time" data-role="assistant">{t_offline}</div>', unsafe_allow_html=True)
+        st.session_state.messages.append({"role": "assistant", "content": offline_msg, "time": t_offline})
         return
 
     req_id = f"REQ-{uuid.uuid4().hex[:6].upper()}"
@@ -1592,11 +1716,13 @@ def handle_input(user_input: str):
                 print(f"LOG: [Pipeline] ❌ Timeout for {req_id}.")
 
         ph = st.empty()
+        t_result = datetime.datetime.now().strftime("%H:%M")
         if result_found:
             confidence_score = parsed.get("confidence", 87)
             html = build_result_html(req_id, predicted_disease, advice_list, confidence_score)
             ph.markdown(html, unsafe_allow_html=True)
-            st.session_state.messages.append({"role": "assistant", "content": html})
+            st.markdown(f'<div class="da-msg-time" data-role="assistant">{t_result}</div>', unsafe_allow_html=True)
+            st.session_state.messages.append({"role": "assistant", "content": html, "time": t_result})
             st.session_state.last_disease = predicted_disease
             st.session_state.current_req_id = req_id
             st.session_state.current_predicted_disease = predicted_disease
@@ -1618,7 +1744,8 @@ def handle_input(user_input: str):
   </div>
 </div>"""
             ph.markdown(err, unsafe_allow_html=True)
-            st.session_state.messages.append({"role": "assistant", "content": err})
+            st.markdown(f'<div class="da-msg-time" data-role="assistant">{t_result}</div>', unsafe_allow_html=True)
+            st.session_state.messages.append({"role": "assistant", "content": err, "time": t_result})
 
 
 # ─────────────────────────────────────────────
