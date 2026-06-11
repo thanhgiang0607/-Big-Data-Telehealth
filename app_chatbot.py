@@ -838,33 +838,9 @@ def reply_diet(disease):
     # Severity warning for urgent conditions
     severity_warning = ""
     if get_severity(disease) == "urgent":
-        # Use semi-transparent urgent color or theme-aware colors for backgrounds
-        severity_warning = f"""
-<div style="background:rgba(255, 107, 107, 0.12); border:1.5px solid #FF6B6B; border-radius:12px; padding:14px; margin-bottom:16px; font-size:0.85rem; color:#FF6B6B;">
-  <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-    <span style="font-size:1.2rem;">🚨</span>
-    <strong style="color:#FF6B6B;">Urgent Priority Assessment</strong>
-  </div>
-  <div style="line-height:1.5;">
-    For conditions like <strong style="color:var(--tx-primary);">{disease}</strong>, immediate medical intervention is critical. Dietary changes are secondary to professional care.
-  </div>
-</div>"""
+        severity_warning = f'<div style="background:rgba(255, 107, 107, 0.12); border:1.5px solid #FF6B6B; border-radius:12px; padding:14px; margin-bottom:16px; font-size:0.85rem; color:#FF6B6B;"><div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;"><span style="font-size:1.2rem;">🚨</span><strong style="color:#FF6B6B;">Urgent Priority Assessment</strong></div><div style="line-height:1.5;">For conditions like <strong style="color:var(--tx-primary);">{disease}</strong>, immediate medical intervention is critical. Dietary changes are secondary to professional care.</div></div>'
 
-    return f"""
-<div class="da-info-card">
-  <div class="da-info-header">🍎 Dietary Guidance: {disease}</div>
-  <div style="padding:16px 20px;">
-    {severity_warning}
-    <div style="margin-bottom:14px;">
-      <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;color:#00A891;margin-bottom:6px;">✅ Recommended</div>
-      <div style="font-size:0.88rem; line-height:1.4;">{rec_html}</div>
-    </div>
-    <div>
-      <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;color:#FF6B6B;margin-bottom:6px;">❌ Avoid / Limit</div>
-      <div style="font-size:0.88rem; line-height:1.4;">{avoid_html}</div>
-    </div>
-  </div>
-</div>"""
+    return f"""<div class="da-info-card"><div class="da-info-header">🍎 Dietary Guidance: {disease}</div><div style="padding:16px 20px;">{severity_warning}<div style="margin-bottom:14px;"><div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;color:#00A891;margin-bottom:6px;">✅ Recommended</div><div style="font-size:0.88rem; line-height:1.4;">{rec_html}</div></div><div><div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;color:#FF6B6B;margin-bottom:6px;">❌ Avoid / Limit</div><div style="font-size:0.88rem; line-height:1.4;">{avoid_html}</div></div></div></div>"""
 
 
 def reply_causes(disease):
@@ -877,8 +853,7 @@ def reply_causes(disease):
         if not match.empty:
             desc = match.iloc[0]['Description']
 
-    return f"""
-<div class="da-info-card">
+    return f"""<div class="da-info-card">
   <div class="da-info-header">🧬 What causes {disease}?</div>
   <div style="padding:16px 20px;">
     <div style="font-size:0.88rem; line-height:1.6; color:var(--tx-primary);">
@@ -924,8 +899,7 @@ def reply_contagious(disease):
                     status_color = "#FF8C42"
                     status_emoji = "⚠️"
 
-    return f"""
-<div class="da-info-card">
+    return f"""<div class="da-info-card">
   <div class="da-info-header">🦠 Is it contagious?</div>
   <div style="padding:18px 20px;">
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
@@ -954,8 +928,7 @@ def reply_clinic():
         f'</div>'
         for c in clinics
     )
-    return f"""
-<div class="da-info-card">
+    return f"""<div class="da-info-card">
   <div class="da-info-header">🏥 Nearby Doctor Anywhere Clinics</div>
   <div style="padding:4px 20px 16px;">
     {rows}
@@ -1115,8 +1088,7 @@ def reply_danger(last_disease):
         f'<li style="padding:6px 0;border-bottom:1px solid {cfg["border"]};color:var(--tx-primary);">⚠️ &nbsp;{w}</li>'
         for w in warnings[severity]
     )
-    return f"""
-<div style="background:var(--bg-card);border:1.5px solid {cfg['border']};border-radius:18px;overflow:hidden;margin-top:4px;box-shadow:var(--sh-card);">
+    return f"""<div style="background:var(--bg-card);border:1.5px solid {cfg['border']};border-radius:18px;overflow:hidden;margin-top:4px;box-shadow:var(--sh-card);">
   <div style="background:{cfg['bg']};padding:14px 20px;border-bottom:1.5px solid {cfg['border']};display:flex;align-items:center;gap:10px;">
     <span style="font-size:1.3rem;">{cfg['emoji']}</span>
     <div style="font-size:0.85rem;font-weight:600;color:{cfg['color']};">Warning signs for <em>{last_disease}</em> — seek help if you notice:</div>
@@ -1186,8 +1158,7 @@ def build_result_html(req_id, disease, advice_list, confidence=87):
             f'<div class="da-precautions-title">💊 First-Aid & Precautions</div>'
             f'{items}</div>'
         )
-    return f"""
-<div class="da-result-card">
+    return f"""<div class="da-result-card">
   <div class="da-result-header">
     <div class="da-result-header-icon">🩺</div>
     <div class="da-result-header-text">
@@ -1560,7 +1531,10 @@ def handle_input(user_input: str):
     if intent in dispatch:
         reply = dispatch[intent]()
         with st.chat_message("assistant"):
-            st.markdown(reply, unsafe_allow_html=True)
+            if "<div" in str(reply) or "<style" in str(reply):
+                st.markdown(reply, unsafe_allow_html=True)
+            else:
+                st.markdown(reply)
         st.session_state.messages.append({"role": "assistant", "content": reply})
         return
 
