@@ -1792,7 +1792,6 @@ def handle_input(user_input: str):
     <div style="font-size:0.95rem; font-weight:700; color:#00A891; margin-bottom:6px;">QStash Queue Accepted</div>
     <div style="font-size:0.83rem; color:var(--tx-secondary); line-height:1.6; max-width:520px; margin:0 auto;">
       Your clinical symptoms have been securely packed and enqueued on the Cloud Message Hub (ID: <code>{req_id}</code>).<br>
-      <span style="color:var(--tx-muted); font-size:0.78rem;">*Semantic vector calculations will automatically render here as soon as you deploy your SBERT Worker AI core in Week 2!*</span>
     </div>
   </div>
 </div>"""
