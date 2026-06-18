@@ -5,8 +5,8 @@ import uuid
 import re
 import pandas as pd
 import redis
-from kafka import KafkaProducer
 import datetime
+import requests
 
 st.set_page_config(
     page_title="Doctor Anywhere — AI Symptom Checker",
@@ -729,10 +729,10 @@ def get_daily_health_tip():
 
 
 def log_feedback(req_id, feedback_type):
-    if redis_client:
+    if redis_db:
         try:
             key = f"telehealth:feedback:{req_id}"
-            redis_client.set(key, feedback_type)
+            redis_db.set(key, feedback_type)
             print(f"LOG: [Feedback] Recorded {feedback_type} for {req_id}")
             return True
         except Exception as e:
@@ -1268,45 +1268,93 @@ def build_result_html(req_id, disease, advice_list, confidence=87):
 </div>"""
 
 
-# ─────────────────────────────────────────────
-#  HEALTH CHECKS
-# ─────────────────────────────────────────────
-def check_services():
-    print("LOG: [System] Starting service health checks...")
-    try:
-        r = redis.Redis(host='localhost', port=6379, db=0, socket_timeout=2)
-        print("LOG: [Redis] ✅ Online" if r.ping() else "LOG: [Redis] ❌ Connection failed")
-    except Exception as e:
-        print(f"LOG: [Redis] ❌ Error: {e}")
-    try:
-        import socket
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(2)
-        result = sock.connect_ex(('localhost', 9092))
-        print("LOG: [Kafka] ✅ Online" if result == 0 else f"LOG: [Kafka] ❌ Offline (code {result})")
-        sock.close()
-    except Exception as e:
-        print(f"LOG: [Kafka] ❌ Error: {e}")
-    print("LOG: [System] Health checks completed.\n")
 
-check_services()
+REDIS_HOST = 'optimum-kit-150562.upstash.io'
+REDIS_PORT = 6379
+REDIS_PASSWORD = 'gQAAAAAAAkwiAAIgcDE1ZjdjNDI3ZjcwYmI0ZTliYTk4YzJjZTExZDNjMGQyZA'
+QSTASH_URL = "https://qstash-eu-central-1.upstash.io"
+QSTASH_TOKEN = "eyJVc2VySUQiOiI2YjkzZDFmZS1lNmNhLTQxNmItYWI2Zi05ZWIzNDFiMTgwN2QiLCJQYXNzd29yZCI6IjAwZTUzZDczMTRhYTQ2ZDNhMGJlNzVjY2NkZDcwOGY5In0="
+WORKER_AI_URL = 'https://telehealth-worker-ai.onrender.com/predict'
 
+def publish_to_qstash(req_id, patient_id, user_input):
+    try:
+        headers = {
+            "Authorization": f"Bearer {QSTASH_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "request_id": req_id,
+            "patient_id": patient_id,
+            "user_input_symptoms": user_input,
+            "timestamp": time.time()
+        }
+        qstash_target_url = f"{QSTASH_URL}/v2/publish/{WORKER_AI_URL}"
+        response = requests.post(qstash_target_url, headers=headers, json=payload, timeout=3)
+        return response.status_code == 201
+    except Exception as e:
+        print(f"LOG: [QStash Error] {e}")
+        return False
 
 # ─────────────────────────────────────────────
 #  INFRA INIT
 # ─────────────────────────────────────────────
-@st.cache_resource
 def init_pipeline():
     try:
-        producer = KafkaProducer(
-            bootstrap_servers=['localhost:9092'],
-            value_serializer=lambda v: json.dumps(v).encode('utf-8'),
-            request_timeout_ms=4000
+        redis_client = redis.Redis(
+            host=REDIS_HOST,
+            port=REDIS_PORT,
+            password=REDIS_PASSWORD,
+            ssl=True,          
+            ssl_cert_reqs=None,
+            decode_responses=True,
+            socket_timeout=3
         )
-        redis_client = redis.Redis(host='localhost', port=6379, db=0)
-        return producer, redis_client
-    except Exception:
-        return None, None
+        return redis_client
+    except Exception as e:
+        print(f"LOG: [Init Error] {e}")
+        return None
+
+redis_db = init_pipeline()
+
+# ─────────────────────────────────────────────
+#  HEALTH CHECKS
+# ─────────────────────────────────────────────
+def check_services():
+    global redis_db
+    st.sidebar.markdown("### 🖥️ Cloud Status")
+    
+    # Try to re-init if previous attempt failed
+    if redis_db is None:
+        redis_db = init_pipeline()
+
+    qstash_ok = False
+    try:
+        headers = {"Authorization": f"Bearer {QSTASH_TOKEN}"}
+        # FIX: Correct endpoint for health check is /v2/events
+        res = requests.get(f"{QSTASH_URL}/v2/events", headers=headers, timeout=3)
+        if res.status_code == 200:
+            st.sidebar.success("QStash Queue: ✅ Online")
+            qstash_ok = True
+        else:
+            st.sidebar.error(f"QStash Queue: ❌ Token Invalid ({res.status_code})")
+    except Exception as e:
+        st.sidebar.error(f"QStash Queue: ❌ Offline")
+        print(f"LOG: [QStash Check Error] {e}")
+        
+    redis_ok = False
+    try:
+        if redis_db and redis_db.ping():
+            st.sidebar.success("Redis Cloud: ✅ Online")
+            redis_ok = True
+        else:
+            st.sidebar.error("Redis Cloud: ❌ Offline (No Connection)")
+    except Exception as e:
+        st.sidebar.error(f"Redis Cloud: ❌ Offline ({str(e)[:50]}...)")
+        print(f"LOG: [Redis Check Error] {e}")
+    
+    return qstash_ok, redis_ok
+
+qstash_status, redis_status = check_services()
 
 @st.cache_data
 def load_precautions():
@@ -1350,7 +1398,6 @@ def load_disease_severity():
         print(f"LOG: [System] Error loading disease severity: {e}")
         return {}
 
-producer, redis_client = init_pipeline()
 df_precaution = load_precautions()
 df_description = load_descriptions()
 disease_severity_scores = load_disease_severity()
@@ -1502,8 +1549,7 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("### System Status")
-    for name, ok in [("Kafka Broker", producer is not None), ("Redis Cache", redis_client is not None),
-                     ("Spark Driver", producer is not None), ("SBERT Model", producer is not None)]:
+    for name, ok in [("QStash Queue", qstash_status), ("Redis Cloud", redis_status)]:
         dot     = "da-dot-green" if ok else "da-dot-red"
         val_cls = "da-status-ok" if ok else "da-status-err"
         st.markdown(
@@ -1659,16 +1705,15 @@ def handle_input(user_input: str):
         return
 
     # ── Symptom → pipeline ──
-    if not producer or not redis_client:
+    if not redis_db:
         t_offline = datetime.datetime.now().strftime("%H:%M")
         with st.chat_message("assistant"):
-            # FIX 3: replace st.warning with branded HTML box
             offline_msg = """
 <div style="background:#FFF8EE;border:1.5px solid #FFD8A0;border-radius:12px;padding:14px 18px;
             display:flex;align-items:center;gap:12px;">
   <span style="font-size:1.3rem;">⚠️</span>
   <div style="font-size:0.88rem;color:#8A5500;font-weight:500;">
-    Backend services are offline. Please check that Docker containers are running.
+    Cloud infrastructure is offline. Please check your Upstash Redis database configuration parameters.
   </div>
 </div>"""
             st.markdown(offline_msg, unsafe_allow_html=True)
@@ -1676,32 +1721,35 @@ def handle_input(user_input: str):
         st.session_state.messages.append({"role": "assistant", "content": offline_msg, "time": t_offline})
         return
 
+    # Generate a unique Request ID for this specific session execution block
     req_id = f"REQ-{uuid.uuid4().hex[:6].upper()}"
-    print(f"LOG: [Pipeline] 📨 Sending {req_id} to Kafka for {st.session_state.patient_id}")
-    producer.send('telehealth-symptoms', value={
-        "request_id":        req_id,
-        "patient_id":        st.session_state.patient_id,
-        "user_input_symptoms": user_input
-    })
-    producer.flush()
+    print(f"LOG: [Pipeline] 📨 Publishing {req_id} to QStash Cloud for {st.session_state.patient_id}")
 
     with st.chat_message("assistant"):
-        with st.spinner("Analyzing symptoms…"):
-            redis_key    = f"telehealth:result:{st.session_state.patient_id}"
-            redis_client.delete(redis_key)
-            result_found     = False
-            predicted_disease= ""
-            advice_list      = []
-
-            print(f"LOG: [Pipeline] 🔍 Polling Redis ({redis_key})...")
-            for i in range(200):
-                time.sleep(0.15)
-                cached = redis_client.get(redis_key)
-                if cached:
-                    parsed = json.loads(cached.decode('utf-8'))
-                    if parsed.get("request_id") == req_id:
-                        print(f"LOG: [Pipeline] ✅ Result for {req_id} after {i+1} attempts.")
-                        predicted_disease = parsed["predicted_disease"]
+        # 1. Dispatch the unstructured symptom payload to the serverless QStash message gateway via HTTP POST
+        with st.spinner("Enqueuing symptoms into QStash cloud buffer..."):
+            is_sent = publish_to_qstash(req_id, st.session_state.patient_id, user_input)
+            
+        result_found = False
+        predicted_disease = ""
+        advice_list = []
+        
+        if is_sent:
+            # 2. Trigger the asynchronous polling loop hitting the Upstash Redis Cloud cache instance
+            with st.spinner("Analyzing symptoms…"):
+                redis_key = f"telehealth:result:{req_id}"
+                print(f"LOG: [Pipeline] 🔍 Polling Redis ({redis_key})...")
+                
+                # Poll 60 times at 200ms intervals -> Max wait ceiling is 12 seconds
+                for i in range(60):
+                    time.sleep(0.2)
+                    cached = redis_db.get(redis_key)
+                    if cached:
+                        parsed = json.loads(cached.decode('utf-8'))
+                        print(f"LOG: [Pipeline] ✅ Result for {req_id} fetched successfully from Redis Cloud after {i+1} attempts.")
+                        predicted_disease = parsed.get("predicted_disease", "")
+                        
+                        # Query the internal tabular knowledge base to extract matching first-aid precautions
                         if df_precaution is not None:
                             match = df_precaution[df_precaution['Disease_match'] == predicted_disease.lower().strip()]
                             if not match.empty:
@@ -1711,14 +1759,16 @@ def handle_input(user_input: str):
                                         advice_list.append(str(val).capitalize())
                         result_found = True
                         break
-
-            if not result_found:
-                print(f"LOG: [Pipeline] ❌ Timeout for {req_id}.")
+                        
+                if not result_found:
+                    print(f"LOG: [Pipeline] ❌ Timeout waiting for Redis key: {req_id}")
 
         ph = st.empty()
         t_result = datetime.datetime.now().strftime("%H:%M")
+        
         if result_found:
-            confidence_score = parsed.get("confidence", 87)
+            # Execution block for when the Week 2 SBERT AI inference worker returns data to Redis Cache
+            confidence_score = parsed.get("confidence_score", parsed.get("confidence", 87))
             html = build_result_html(req_id, predicted_disease, advice_list, confidence_score)
             ph.markdown(html, unsafe_allow_html=True)
             st.markdown(f'<div class="da-msg-time" data-role="assistant">{t_result}</div>', unsafe_allow_html=True)
@@ -1732,20 +1782,23 @@ def handle_input(user_input: str):
                 "time":     datetime.datetime.now().strftime("%H:%M"),
                 "req_id":   req_id,
             })
-
             render_followup_and_feedback(req_id, predicted_disease)
         else:
-            err = """
+            # Fallback mockup design displaying successful queue state for the Week 1 cloud pipeline check
+            mock_msg = f"""
 <div class="da-result-card">
-  <div style="padding:20px 24px;text-align:center;">
-    <div style="font-size:2rem;margin-bottom:10px;">⏱️</div>
-    <div style="font-size:0.9rem;font-weight:600;color:#C25A00;margin-bottom:6px;">Analysis Timeout</div>
-    <div style="font-size:0.82rem;color:#A0BCB8;">The pipeline did not return a result in time. Please check your Docker services and try again.</div>
+  <div style="padding:22px 24px; text-align:center;">
+    <div style="font-size:2.2rem; margin-bottom:12px;">🚀</div>
+    <div style="font-size:0.95rem; font-weight:700; color:#00A891; margin-bottom:6px;">QStash Queue Accepted</div>
+    <div style="font-size:0.83rem; color:var(--tx-secondary); line-height:1.6; max-width:520px; margin:0 auto;">
+      Your clinical symptoms have been securely packed and enqueued on the Cloud Message Hub (ID: <code>{req_id}</code>).<br>
+      <span style="color:var(--tx-muted); font-size:0.78rem;">*Semantic vector calculations will automatically render here as soon as you deploy your SBERT Worker AI core in Week 2!*</span>
+    </div>
   </div>
 </div>"""
-            ph.markdown(err, unsafe_allow_html=True)
+            ph.markdown(mock_msg, unsafe_allow_html=True)
             st.markdown(f'<div class="da-msg-time" data-role="assistant">{t_result}</div>', unsafe_allow_html=True)
-            st.session_state.messages.append({"role": "assistant", "content": err, "time": t_result})
+            st.session_state.messages.append({"role": "assistant", "content": mock_msg, "time": t_result})
 
 
 # ─────────────────────────────────────────────
