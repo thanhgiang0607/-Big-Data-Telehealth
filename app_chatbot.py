@@ -1704,101 +1704,88 @@ def handle_input(user_input: str):
         st.session_state.messages.append({"role": "assistant", "content": reply, "time": t_assistant})
         return
 
-    # ── Symptom → pipeline ──
-    if not redis_db:
-        t_offline = datetime.datetime.now().strftime("%H:%M")
-        with st.chat_message("assistant"):
-            offline_msg = """
-<div style="background:#FFF8EE;border:1.5px solid #FFD8A0;border-radius:12px;padding:14px 18px;
-            display:flex;align-items:center;gap:12px;">
-  <span style="font-size:1.3rem;">⚠️</span>
-  <div style="font-size:0.88rem;color:#8A5500;font-weight:500;">
-    Cloud infrastructure is offline. Please check your Upstash Redis database configuration parameters.
-  </div>
-</div>"""
-            st.markdown(offline_msg, unsafe_allow_html=True)
-            st.markdown(f'<div class="da-msg-time" data-role="assistant">{t_offline}</div>', unsafe_allow_html=True)
-        st.session_state.messages.append({"role": "assistant", "content": offline_msg, "time": t_offline})
-        return
-
-    # Generate a unique Request ID for this specific session execution block
+    # ── Symptom → Embedded Local SBERT Pipeline ──
     req_id = f"REQ-{uuid.uuid4().hex[:6].upper()}"
-    print(f"LOG: [Pipeline] 📨 Publishing {req_id} to QStash Cloud for {st.session_state.patient_id}")
-
+    
     with st.chat_message("assistant"):
-        # 1. Dispatch the unstructured symptom payload to the serverless QStash message gateway via HTTP POST
-        with st.spinner("Enqueuing symptoms into QStash cloud buffer..."):
-            is_sent = publish_to_qstash(req_id, st.session_state.patient_id, user_input)
-            
-        result_found = False
-        predicted_disease = ""
-        advice_list = []
-        
-        if is_sent:
-            # 2. Trigger the asynchronous polling loop hitting the Upstash Redis Cloud cache instance
-            with st.spinner("Analyzing symptoms…"):
-                redis_key = f"telehealth:result:{req_id}"
-                print(f"LOG: [Pipeline] 🔍 Polling Redis ({redis_key})...")
+        with st.spinner("Analyzing symptoms via local calibrated SBERT..."):
+            try:
+                # Dynamically pull in structural modeling libs
+                from sklearn.metrics.pairwise import cosine_similarity
+                from sentence_transformers import SentenceTransformer
+                import pickle
+                import os
+                import numpy as np
+
+                MODEL_DIR = "models/"
+                COSINE_MIN = 0.25
+                COSINE_MAX = 0.65
+
+                # 1. Load the core embedding encoder model
+                local_sbert = SentenceTransformer('all-MiniLM-L6-v2')
+
+                # 2. Extract serialized vectors and label encoders directly
+                with open(os.path.join(MODEL_DIR, 'label_encoder.pkl'), 'rb') as f:
+                    local_encoder = pickle.load(f)
+                with open(os.path.join(MODEL_DIR, 'train_embeddings.pkl'), 'rb') as f:
+                    local_train_data = pickle.load(f)
+                    local_X_train = local_train_data['X_train']
+                    local_y_train = local_train_data['y_train']
+
+                # 3. Vectorize user inputs and process matrix multiplications
+                test_vector = local_sbert.encode(user_input, convert_to_numpy=True)
+                raw_similarities = cosine_similarity([test_vector], local_X_train)[0]
+                best_match_idx = np.argmax(raw_similarities)
+                raw_score = raw_similarities[best_match_idx]
+
+                # 4. Decode classification output strings
+                pred_nlp_code = local_y_train[best_match_idx]
+                predicted_disease = local_encoder.inverse_transform([pred_nlp_code])[0]
+
+                # 5. Execute your custom Min-Max Calibration mapping math
+                calibrated_score = (raw_score - COSINE_MIN) / (COSINE_MAX - COSINE_MIN)
+                confidence_score = max(min(int(calibrated_score * 100), 98), 50)
+
+                # 6. Parse and capture preventative clinical advice from local CSV matrix
+                advice_list = []
+                if df_precaution is not None:
+                    match = df_precaution[df_precaution['Disease_match'] == predicted_disease.lower().strip()]
+                    if not match.empty:
+                        for col in [c for c in df_precaution.columns if 'Precaution' in c]:
+                            val = match.iloc[0][col]
+                            if pd.notnull(val) and str(val).strip() not in ["none", ""]:
+                                advice_list.append(str(val).capitalize())
+
+                # 7. Render matching dashboard output presentation layers
+                html = build_result_html(req_id, predicted_disease, advice_list, confidence_score)
+                st.markdown(html, unsafe_allow_html=True)
                 
-                # Poll 60 times at 200ms intervals -> Max wait ceiling is 12 seconds
-                for i in range(60):
-                    time.sleep(0.2)
-                    cached = redis_db.get(redis_key)
-                    if cached:
-                        parsed = json.loads(cached.decode('utf-8'))
-                        print(f"LOG: [Pipeline] ✅ Result for {req_id} fetched successfully from Redis Cloud after {i+1} attempts.")
-                        predicted_disease = parsed.get("predicted_disease", "")
-                        
-                        # Query the internal tabular knowledge base to extract matching first-aid precautions
-                        if df_precaution is not None:
-                            match = df_precaution[df_precaution['Disease_match'] == predicted_disease.lower().strip()]
-                            if not match.empty:
-                                for col in [c for c in df_precaution.columns if 'Precaution' in c]:
-                                    val = match.iloc[0][col]
-                                    if pd.notnull(val) and str(val).strip() not in ["none", ""]:
-                                        advice_list.append(str(val).capitalize())
-                        result_found = True
-                        break
-                        
-                if not result_found:
-                    print(f"LOG: [Pipeline] ❌ Timeout waiting for Redis key: {req_id}")
+                # Append state flags to keep chat session memory persistent
+                st.session_state.messages.append({"role": "assistant", "content": html, "time": t_now})
+                st.session_state.last_disease = predicted_disease
+                st.session_state.current_req_id = req_id
+                st.session_state.current_predicted_disease = predicted_disease
+                st.session_state.diagnosis_history.append({
+                    "disease":  predicted_disease,
+                    "symptoms": user_input,
+                    "time":     datetime.datetime.now().strftime("%H:%M"),
+                    "req_id":   req_id,
+                })
+                
+                render_followup_and_feedback(req_id, predicted_disease)
 
-        ph = st.empty()
-        t_result = datetime.datetime.now().strftime("%H:%M")
-        
-        if result_found:
-            # Execution block for when the Week 2 SBERT AI inference worker returns data to Redis Cache
-            confidence_score = parsed.get("confidence_score", parsed.get("confidence", 87))
-            html = build_result_html(req_id, predicted_disease, advice_list, confidence_score)
-            ph.markdown(html, unsafe_allow_html=True)
-            st.markdown(f'<div class="da-msg-time" data-role="assistant">{t_result}</div>', unsafe_allow_html=True)
-            st.session_state.messages.append({"role": "assistant", "content": html, "time": t_result})
-            st.session_state.last_disease = predicted_disease
-            st.session_state.current_req_id = req_id
-            st.session_state.current_predicted_disease = predicted_disease
-            st.session_state.diagnosis_history.append({
-                "disease":  predicted_disease,
-                "symptoms": user_input,
-                "time":     datetime.datetime.now().strftime("%H:%M"),
-                "req_id":   req_id,
-            })
-            render_followup_and_feedback(req_id, predicted_disease)
-        else:
-            # Fallback mockup design displaying successful queue state for the Week 1 cloud pipeline check
-            mock_msg = f"""
-<div class="da-result-card">
-  <div style="padding:22px 24px; text-align:center;">
-    <div style="font-size:2.2rem; margin-bottom:12px;">🚀</div>
-    <div style="font-size:0.95rem; font-weight:700; color:#00A891; margin-bottom:6px;">QStash Queue Accepted</div>
-    <div style="font-size:0.83rem; color:var(--tx-secondary); line-height:1.6; max-width:520px; margin:0 auto;">
-      Your clinical symptoms have been securely packed and enqueued on the Cloud Message Hub (ID: <code>{req_id}</code>).<br>
-    </div>
-  </div>
-</div>"""
-            ph.markdown(mock_msg, unsafe_allow_html=True)
-            st.markdown(f'<div class="da-msg-time" data-role="assistant">{t_result}</div>', unsafe_allow_html=True)
-            st.session_state.messages.append({"role": "assistant", "content": mock_msg, "time": t_result})
-
+            except Exception as e:
+                # Safe error reporting presentation backup layer
+                error_box = f"""
+                <div class="da-result-card">
+                  <div style="padding:20px 24px;text-align:center;">
+                    <div style="font-size:2rem;margin-bottom:10px;">⚠️</div>
+                    <div style="font-size:0.9rem;font-weight:600;color:#FF6B6B;margin-bottom:6px;">Inference Pipeline Error</div>
+                    <div style="font-size:0.82rem;color:var(--tx-secondary);">{str(e)}</div>
+                  </div>
+                </div>"""
+                st.markdown(error_box, unsafe_allow_html=True)
+                st.session_state.messages.append({"role": "assistant", "content": error_box, "time": t_now})
 
 # ─────────────────────────────────────────────
 #  MAIN DISPATCH
