@@ -38,7 +38,7 @@ sbert_model = SentenceTransformer('all-MiniLM-L6-v2')
 
 # Load Label Encoder to decode class strings
 with open(os.path.join(MODEL_DIR, 'label_encoder.pkl'), 'rb') as f:
-    label_encoder = pickle.dump = pickle.load(f)
+    label_encoder = pickle.load(f)
 
 # Load the historical Training Vector Space matrix (X_train & y_train)
 with open(os.path.join(MODEL_DIR, 'train_embeddings.pkl'), 'rb') as f:

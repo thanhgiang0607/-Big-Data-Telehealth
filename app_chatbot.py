@@ -1704,49 +1704,40 @@ def handle_input(user_input: str):
         st.session_state.messages.append({"role": "assistant", "content": reply, "time": t_assistant})
         return
 
-    # ── Symptom → Embedded Local SBERT Pipeline ──
+    # ── Symptom → Distributed Pipeline (QStash + Redis) ──
     req_id = f"REQ-{uuid.uuid4().hex[:6].upper()}"
     
     with st.chat_message("assistant"):
-        with st.spinner("Analyzing symptoms via local calibrated SBERT..."):
+        with st.spinner("Analyzing symptoms via distributed AI pipeline..."):
             try:
-                # Dynamically pull in structural modeling libs
-                from sklearn.metrics.pairwise import cosine_similarity
-                from sentence_transformers import SentenceTransformer
-                import pickle
-                import os
-                import numpy as np
+                # 1. Publish the request to the worker via QStash
+                success = publish_to_qstash(req_id, st.session_state.patient_id, user_input)
+                
+                if not success:
+                    raise Exception("Failed to dispatch request to the AI worker via QStash.")
 
-                MODEL_DIR = "models/"
-                COSINE_MIN = 0.25
-                COSINE_MAX = 0.65
+                # 2. Poll Redis for the result (with timeout)
+                predicted_disease = None
+                confidence_score = None
+                max_attempts = 20
+                attempt = 0
+                
+                while attempt < max_attempts:
+                    if redis_db:
+                        result_data = redis_db.get(f"telehealth:result:{req_id}")
+                        if result_data:
+                            res = json.loads(result_data)
+                            predicted_disease = res.get("predicted_disease")
+                            confidence_score = res.get("confidence_score")
+                            break
+                    
+                    time.sleep(0.8) # Poll every 800ms
+                    attempt += 1
 
-                # 1. Load the core embedding encoder model
-                local_sbert = SentenceTransformer('all-MiniLM-L6-v2')
+                if not predicted_disease:
+                    raise Exception("The AI worker took too long to respond. Please try again.")
 
-                # 2. Extract serialized vectors and label encoders directly
-                with open(os.path.join(MODEL_DIR, 'label_encoder.pkl'), 'rb') as f:
-                    local_encoder = pickle.load(f)
-                with open(os.path.join(MODEL_DIR, 'train_embeddings.pkl'), 'rb') as f:
-                    local_train_data = pickle.load(f)
-                    local_X_train = local_train_data['X_train']
-                    local_y_train = local_train_data['y_train']
-
-                # 3. Vectorize user inputs and process matrix multiplications
-                test_vector = local_sbert.encode(user_input, convert_to_numpy=True)
-                raw_similarities = cosine_similarity([test_vector], local_X_train)[0]
-                best_match_idx = np.argmax(raw_similarities)
-                raw_score = raw_similarities[best_match_idx]
-
-                # 4. Decode classification output strings
-                pred_nlp_code = local_y_train[best_match_idx]
-                predicted_disease = local_encoder.inverse_transform([pred_nlp_code])[0]
-
-                # 5. Execute your custom Min-Max Calibration mapping math
-                calibrated_score = (raw_score - COSINE_MIN) / (COSINE_MAX - COSINE_MIN)
-                confidence_score = max(min(int(calibrated_score * 100), 98), 50)
-
-                # 6. Parse and capture preventative clinical advice from local CSV matrix
+                # 3. Parse and capture preventative clinical advice from local CSV matrix
                 advice_list = []
                 if df_precaution is not None:
                     match = df_precaution[df_precaution['Disease_match'] == predicted_disease.lower().strip()]
@@ -1756,7 +1747,7 @@ def handle_input(user_input: str):
                             if pd.notnull(val) and str(val).strip() not in ["none", ""]:
                                 advice_list.append(str(val).capitalize())
 
-                # 7. Render matching dashboard output presentation layers
+                # 4. Render matching dashboard output presentation layers
                 html = build_result_html(req_id, predicted_disease, advice_list, confidence_score)
                 st.markdown(html, unsafe_allow_html=True)
                 
@@ -1780,7 +1771,7 @@ def handle_input(user_input: str):
                 <div class="da-result-card">
                   <div style="padding:20px 24px;text-align:center;">
                     <div style="font-size:2rem;margin-bottom:10px;">⚠️</div>
-                    <div style="font-size:0.9rem;font-weight:600;color:#FF6B6B;margin-bottom:6px;">Inference Pipeline Error</div>
+                    <div style="font-size:0.9rem;font-weight:600;color:#FF6B6B;margin-bottom:6px;">Pipeline Connection Error</div>
                     <div style="font-size:0.82rem;color:var(--tx-secondary);">{str(e)}</div>
                   </div>
                 </div>"""
