@@ -12,9 +12,10 @@ from sentence_transformers import SentenceTransformer
 app = FastAPI(title="Telehealth Custom SBERT Calibration Worker")
 
 # ── 1. CLOUD INFRASTRUCTURE CONFIGURATION (UPSTASH REDIS) ──
-REDIS_HOST = 'optimum-kit-150562.upstash.io'
-REDIS_PORT = 6379
-REDIS_PASSWORD = 'gQAAAAAAAkwiAAIgcDE1ZjdjNDI3ZjcwYmI0ZTliYTk4YzJjZTExZDNjMGQyZA'
+# Credentials are read from environment variables - never commit them to the repo.
+REDIS_HOST = os.environ.get('REDIS_HOST')
+REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
+REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
 
 try:
     redis_db = redis.Redis(

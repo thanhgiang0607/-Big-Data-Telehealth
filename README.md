@@ -65,3 +65,24 @@ The app provides detailed debug logs in the Streamlit console to track your requ
 2. **Message Broker (Kafka):** Queues symptom requests for processing.
 3. **Processing (Spark Streaming):** Consumes Kafka messages, runs AI models (SBERT + RF), and calculates confidence scores.
 4. **Result Store (Redis):** Acts as a low-latency bridge to pass results back to the frontend.
+
+---
+
+## 📊 Evaluation (measured, reproducible)
+
+**Data quality:** `dataset.csv` has 4,920 rows but **93.8% are exact duplicates** → 304 unique symptom profiles across 41 diseases after cleaning (`scripts/data_valuation.py`).
+
+**Model benchmark** (`python scripts/model_training.py`, results in `models/benchmark_report.json`) — all engines use the same Sentence-BERT (`all-MiniLM-L6-v2`) embeddings:
+
+| Engine | Hold-out macro-F1 | 5-fold CV macro-F1 | Median latency / query |
+|---|---|---|---|
+| SBERT class centroid (cosine) | 1.000 | 1.000 ± 0.000 | 0.19 ms |
+| SBERT 1-NN (cosine) — *serving engine* | 0.987 | 0.988 ± 0.011 | 0.28 ms |
+| Random Forest on SBERT embeddings | 0.974 | 0.972 ± 0.015 | 13.7 ms |
+
+> ⚠ The dataset contains only templated symptom lists, so near-perfect scores do **not** reflect accuracy on real patient free text.
+
+**End-to-end latency** (`python generalization.py 100` with Kafka, Spark and Redis running): Kafka → Spark Structured Streaming (1 s trigger) → Redis → client poll.
+100/100 requests answered, **p50 1.50 s, p95 1.98 s**. Chart: `system_latency_report.png` (raw measurements are written locally to `data/cleaned/latency_measurements.csv`, which is git-ignored).
+
+**Secrets:** `main_worker.py` reads `REDIS_HOST`, `REDIS_PORT` and `REDIS_PASSWORD` from environment variables.

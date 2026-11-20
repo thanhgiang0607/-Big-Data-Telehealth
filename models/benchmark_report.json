@@ -1,0 +1,31 @@
+{
+  "n_samples": 304,
+  "n_classes": 41,
+  "results": [
+    {
+      "engine": "SBERT 1-NN (cosine)",
+      "holdout_accuracy": 0.9836065573770492,
+      "holdout_macro_f1": 0.9869918699186992,
+      "cv5_macro_f1_mean": 0.9882926829268293,
+      "cv5_macro_f1_std": 0.010999372048967665,
+      "median_latency_ms": 0.2828750293701887
+    },
+    {
+      "engine": "SBERT Class Centroid (cosine)",
+      "holdout_accuracy": 1.0,
+      "holdout_macro_f1": 1.0,
+      "cv5_macro_f1_mean": 1.0,
+      "cv5_macro_f1_std": 0.0,
+      "median_latency_ms": 0.1857911702245474
+    },
+    {
+      "engine": "Random Forest on SBERT embeddings",
+      "holdout_accuracy": 0.9672131147540983,
+      "holdout_macro_f1": 0.9739837398373985,
+      "cv5_macro_f1_mean": 0.9720325203252032,
+      "cv5_macro_f1_std": 0.015057999223141766,
+      "median_latency_ms": 13.708499958738685
+    }
+  ],
+  "best_by_cv_macro_f1": "SBERT Class Centroid (cosine)"
+}

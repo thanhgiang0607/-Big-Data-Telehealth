@@ -1,52 +1,79 @@
+"""
+Measure REAL end-to-end latency of the streaming pipeline:
+  Kafka produce  ->  Spark Structured Streaming inference  ->  Redis result  ->  client poll
+
+Prerequisites (see README): `docker-compose up -d` and `python spark_streaming.py` running.
+Usage: python generalization.py [num_requests]
+Outputs: system_latency_report.png and data/cleaned/latency_measurements.csv
+"""
+import os
+import sys
+import json
+import time
+import uuid
+import random
 import numpy as np
+import pandas as pd
+import redis
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import seaborn as sns
+from kafka import KafkaProducer
 
-# Thiết lập cấu hình đồ họa khoa học sang trọng
-sns.set_theme(style="whitegrid")
-plt.rcParams.update({'font.family': 'sans-serif', 'font.size': 10})
+N_REQUESTS = int(sys.argv[1]) if len(sys.argv) > 1 else 100
+TOPIC = "telehealth-symptoms"
+TIMEOUT_S = 30
+GAP_S = 0.5  # pause between requests so each one is measured in isolation
 
-# Giả lập dữ liệu 100 requests chạy động quanh vùng 1.12s - 1.25s 
-# Thêm vài đỉnh nhọn (Spikes) tại các vị trí chạy luật lâm sàng sâu
-np.random.seed(42)
-requests = np.arange(1, 101)
-base_latency = np.random.normal(1.16, 0.03, 100)
-spikes_indices = [12, 28, 45, 61, 78, 89]
-for idx in spikes_indices:
-    base_latency[idx] += np.random.uniform(0.12, 0.16)
+producer = KafkaProducer(bootstrap_servers=["localhost:9092"],
+                         value_serializer=lambda v: json.dumps(v).encode("utf-8"))
+r = redis.Redis(host="localhost", port=6379, db=0)
 
-# Khống chế dữ liệu thực nghiệm nằm chuẩn dải cấu hình phần mềm
-latencies = np.clip(base_latency, 1.05, 1.38)
+try:
+    symptoms = pd.read_csv("data/cleaned/cleaned_dataset.csv")["Cleaned_Symptoms_Text"].dropna().tolist()
+except FileNotFoundError:
+    symptoms = ["headache, vomiting, chills", "skin rash, high fever, itching"]
 
-# Khởi tạo khung vẽ đồ thị
+random.seed(42)
+rows = []
+print(f"Sending {N_REQUESTS} requests and measuring end-to-end latency...")
+for i in range(1, N_REQUESTS + 1):
+    patient_id = f"BENCH-{uuid.uuid4().hex[:10]}"
+    key = f"telehealth:result:{patient_id}"
+    payload = {"request_id": f"REQ-{uuid.uuid4().hex[:8]}", "patient_id": patient_id,
+               "user_input_symptoms": random.choice(symptoms)}
+
+    t0 = time.perf_counter()
+    producer.send(TOPIC, value=payload)
+    producer.flush()
+    latency = None
+    while time.perf_counter() - t0 < TIMEOUT_S:
+        if r.exists(key):
+            latency = time.perf_counter() - t0
+            break
+        time.sleep(0.01)
+    rows.append({"request": i, "latency_s": latency})
+    print(f"  #{i:3d}  {'TIMEOUT' if latency is None else f'{latency:.3f}s'}")
+    r.delete(key)
+    time.sleep(GAP_S)
+
+df = pd.DataFrame(rows)
+os.makedirs("data/cleaned", exist_ok=True)
+df.to_csv("data/cleaned/latency_measurements.csv", index=False)
+
+ok = df["latency_s"].dropna()
+if ok.empty:
+    raise SystemExit("No responses received - is spark_streaming.py running?")
+print(f"\nCompleted {len(ok)}/{N_REQUESTS} | p50 {ok.median():.3f}s | p95 {ok.quantile(0.95):.3f}s | max {ok.max():.3f}s")
+
 plt.figure(figsize=(11, 5.5))
-
-# Vẽ đường biểu diễn độ trễ
-plt.plot(requests, latencies, color='#00C2A8', linewidth=2, alpha=0.9, 
-         label='Measured End-to-End Latency')
-
-# Vẽ các điểm Marker tại các vị trí nhảy trễ (Spikes) để phân tích khoa học
-plt.scatter(requests[spikes_indices] + 1, latencies[spikes_indices], 
-            color='#FF6B6B', s=45, zorder=5, label='Clinical Rule Processing Spikes')
-
-# Vẽ đường giới hạn cứng vật lý tối thiểu (Spark Trigger = 1.0s)
-plt.axhline(y=1.0, color='#1f77b4', linestyle='--', linewidth=1.2, 
-            alpha=0.8, label='Physical Spark Trigger Bound (1.0s)')
-
-# Cấu hình nhãn trục và tiêu đề trực quan
-plt.title('Distributed Infrastructure: Evaluation of End-to-End Latency Variation',
-          fontweight='bold', pad=20, fontsize=13)
-plt.xlabel('Sequential Telehealth Requests (Kafka Ingestion)', fontweight='bold', labelpad=12)
-plt.ylabel('Latency Duration (Seconds)', fontweight='bold', labelpad=12)
-
-plt.xlim(0, 101)
-plt.ylim(0.8, 1.6)
-
-# Đặt hộp chú thích gọn gàng
-plt.legend(loc='upper right', frameon=True, facecolor='white', edgecolor='silver')
-
+plt.plot(df["request"], df["latency_s"], color="#00C2A8", linewidth=2, label="Measured end-to-end latency")
+plt.axhline(ok.median(), color="#1f77b4", linestyle="--", label=f"p50 = {ok.median():.2f}s")
+plt.axhline(ok.quantile(0.95), color="#FF6B6B", linestyle=":", label=f"p95 = {ok.quantile(0.95):.2f}s")
+plt.title("Kafka -> Spark Streaming -> Redis: measured end-to-end latency", fontweight="bold")
+plt.xlabel("Request #")
+plt.ylabel("Latency (s)")
+plt.legend(loc="upper right")
 plt.tight_layout()
-output_path = 'system_latency_report.png'
-plt.savefig(output_path, dpi=300)
-plt.close()
-print(f"💾 ĐÃ XUẤT BIỂU ĐỒ ĐỘ TRỄ THÀNH CÔNG TẠI -> '{output_path}'")
+plt.savefig("system_latency_report.png", dpi=200)
+print("Saved system_latency_report.png and data/cleaned/latency_measurements.csv")
